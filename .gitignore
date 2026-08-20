@@ -1,0 +1,9 @@
+# 仅部署游戏本体到 GitHub Pages；以下文件不入库
+*.csv
+*.zip
+*.docx
+build_idioms.py
+test/
+deploy/
+.mimosa/
+.zcode/

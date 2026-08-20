@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>成语下落 · 八尺书生坠字渊</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ===== 开始界面 ===== -->
+<div id="screen-start" class="screen">
+  <div class="start-inner pixel-panel">
+    <div class="start-deco">墨 · 渊 · 书 · 生</div>
+    <h1 class="game-title">成语下落</h1>
+    <p class="game-sub">八尺书生坠字渊 · 拾字成章渡墨狱</p>
+    <div id="start-best" class="start-best"></div>
+    <button id="btn-start" class="pixel-btn big">开 始 下 落</button>
+    <div class="start-help">
+      <p><b>← / →</b>（手机左右滑动）控制书生 · 平台上首次按键即向该侧跳起</p>
+      <p><b>按住不放</b>（手指停在屏幕）张开书卷滑翔，减缓下落</p>
+      <p>按顺序落在成语的四个字上 · 选错弹回并扣血 · 停留超3秒平台碎裂</p>
+    </div>
+    <button id="btn-mute-start" class="mini-btn">音效：开</button>
+  </div>
+</div>
+
+<!-- ===== 游戏界面（三栏像素街机布局） ===== -->
+<div id="screen-game" class="screen hidden">
+  <div class="layout">
+
+    <!-- 左栏：战绩面板 -->
+    <aside class="panel pixel-panel" id="panel-left">
+      <h3 class="panel-title">战绩</h3>
+      <div class="hp-block">
+        <div class="hp-label">生命 <span id="hp-num">100</span></div>
+        <div class="hp-bar"><div id="hp-fill"></div></div>
+      </div>
+      <ul class="stat-list">
+        <li><span>积分</span><b id="stat-score" class="num">0</b></li>
+        <li><span>连击</span><b id="stat-combo" class="num">0</b></li>
+        <li><span>倍率</span><b id="stat-mult" class="num gold">×1.00</b></li>
+        <li><span>深度</span><b id="stat-depth" class="num">0 m</b></li>
+        <li><span>成语</span><b id="stat-idioms" class="num">0</b></li>
+        <li><span>金币</span><b id="stat-coins" class="num gold">0</b></li>
+      </ul>
+      <div id="boost-pill" class="state-pill boost hidden">学富五车 ×2</div>
+      <div id="slow-pill" class="state-pill slow hidden">减速中</div>
+    </aside>
+
+    <!-- 中栏：顶部成语进度条 + Canvas + 底部按键提示 -->
+    <div class="center">
+      <div id="idiom-bar" class="pixel-panel">
+        <div id="idiom-slots" class="idiom-slots"></div>
+        <div id="idiom-pinyin" class="idiom-pinyin">huà lóng diǎn jīng</div>
+        <div id="idiom-expl" class="idiom-expl">释义：……</div>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="game-canvas" width="420" height="760"></canvas>
+        <button id="btn-pause" class="mini-btn pause-btn">暂停 (P)</button>
+        <button id="btn-mute-game" class="mini-btn mute-btn">音效：开</button>
+        <!-- 移动端浮动战绩 -->
+        <div id="hud-mobile" class="hidden">
+          <div class="m-top">
+            <div class="m-hp"><div id="m-hp-fill"></div></div>
+            <div class="m-stats">
+              <span id="m-score" class="num">0</span>
+              <span id="m-combo" class="num gold">×1.00</span>
+              <span id="m-depth" class="num">0m</span>
+            </div>
+          </div>
+          <div class="m-items">
+            <button class="m-item" id="m-clock">⏱×0</button>
+            <button class="m-item" id="m-hammer">🔨×0</button>
+            <button class="m-item" id="m-leaf">🌿×0</button>
+          </div>
+        </div>
+      </div>
+      <div id="key-hints" class="key-hints">
+        <span id="hint-left" class="key">←</span><span class="key">→</span> 移动 / 跳跃
+        <span class="sep">·</span> 按住减速 <span class="sep">·</span> 1/2/3 道具 <span class="sep">·</span> P 暂停
+      </div>
+    </div>
+
+    <!-- 右栏：道具与历史记录 -->
+    <aside class="panel pixel-panel" id="panel-right">
+      <h3 class="panel-title">道具</h3>
+      <ul class="inv-list">
+        <li id="inv-clock-row" title="下落减速5秒（快捷键1）">
+          <span class="inv-ico clock">⏱</span><span class="inv-name">减速表</span><b id="inv-clock" class="num">0</b>
+        </li>
+        <li id="inv-hammer-row" title="清除下方4层错误平台（快捷键2）">
+          <span class="inv-ico hammer">🔨</span><span class="inv-name">排雷锤</span><b id="inv-hammer" class="num">0</b>
+        </li>
+        <li id="inv-leaf-row" title="立即恢复30生命（快捷键3）">
+          <span class="inv-ico leaf">🌿</span><span class="inv-name">生命树叶</span><b id="inv-leaf" class="num">0</b>
+        </li>
+      </ul>
+      <h3 class="panel-title">成语史</h3>
+      <ul id="history-list" class="history-list"></ul>
+    </aside>
+  </div>
+</div>
+
+<!-- ===== 暂停遮罩 ===== -->
+<div id="overlay-pause" class="overlay hidden">
+  <div class="pixel-panel overlay-box">
+    <h2>暂 停</h2>
+    <p class="overlay-tip">书生悬于半空，墨渊静候。</p>
+    <button id="btn-resume" class="pixel-btn">继续下落</button>
+    <button id="btn-quit" class="pixel-btn ghost">返回开始</button>
+  </div>
+</div>
+
+<!-- ===== 结算界面 ===== -->
+<div id="screen-over" class="screen hidden">
+  <div class="over-inner pixel-panel">
+    <div id="over-best" class="over-best hidden">★ 新纪录 ★</div>
+    <h2 class="over-title">墨 尽 落 定</h2>
+    <div id="over-title" class="over-rank">【秀才】</div>
+    <div class="over-grid">
+      <div class="og"><span>积分</span><b id="over-score" class="num gold">0</b></div>
+      <div class="og"><span>深度</span><b id="over-depth" class="num">0</b></div>
+      <div class="og"><span>成语</span><b id="over-idioms" class="num">0</b></div>
+      <div class="og"><span>正确率</span><b id="over-acc" class="num">0</b></div>
+      <div class="og"><span>错字</span><b id="over-wrong" class="num">0</b></div>
+      <div class="og"><span>最高连击</span><b id="over-combo" class="num">0</b></div>
+      <div class="og"><span>金币</span><b id="over-coins" class="num">0</b></div>
+    </div>
+    <div id="over-comment" class="over-comment"></div>
+    <div class="over-btns">
+      <button id="btn-again" class="pixel-btn big">再来一局</button>
+      <button id="btn-share" class="pixel-btn gold">分享战绩</button>
+      <button id="btn-back-start" class="pixel-btn ghost">返回开始</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- 数据与脚本（传统脚本，file:// 直开可用） -->
+<script src="js/data/idioms.js"></script>
+<script src="js/data/common.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/idioms.js"></script>
+<script src="js/input.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/effects.js"></script>
+<script src="js/camera.js"></script>
+<script src="js/player.js"></script>
+<script src="js/platforms.js"></script>
+<script src="js/items.js"></script>
+<script src="js/scoring.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/game.js"></script>
+<script src="js/settlement.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
