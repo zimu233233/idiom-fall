@@ -49,8 +49,7 @@ const Game = {
   },
 
   hpDrainRate() {
-    let r = CFG.HP_DRAIN_BASE + (this.stage() - 1) * CFG.HP_DRAIN_PER_STAGE;
-    r = Math.min(r, CFG.HP_DRAIN_MAX);
+    let r = Utils.drainRate(this.depthM());
     if (Scoring.boostT > 0) r *= 0.5;
     return r;
   },
@@ -117,9 +116,10 @@ const Game = {
     }
   },
 
-  pause() {
+  pause(silent) {
     if (this.state !== "play") return;
     this.state = "pause";
+    if (silent) return; // 静默冻结（手机抽屉）：不弹暂停遮罩
     const ov = document.getElementById("overlay-pause");
     if (ov) ov.classList.remove("hidden");
   },

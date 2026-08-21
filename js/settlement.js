@@ -13,10 +13,10 @@ const Settlement = {
   ],
   DEPTH_LINES: [
     [0, ["不过刚沾了沾深渊的墨气。", "渊口的风还在耳边。"]],
-    [100, ["已在字渊中落出百米，墨风扑面。", "百米之下，字影初现。"]],
-    [300, ["三百米深处，字影渐密、灯影渐稀。", "三百米处，连回声都带着墨味。"]],
-    [600, ["六百米！此处的成语已开始生僻。", "六百米深处，古字在暗中发光。"]],
-    [1000, ["千米之下，唯闻笔锋破空之声。", "千米之渊，人间灯火已成传说。"]],
+    [100, ["已在字渊中落出百丈，墨风扑面。", "百丈之下，字影初现。"]],
+    [300, ["三百丈深处，字影渐密、灯影渐稀。", "三百丈处，连回声都带着墨味。"]],
+    [600, ["六百丈！此处的成语已开始生僻。", "六百丈深处，古字在暗中发光。"]],
+    [1000, ["千丈之下，唯闻笔锋破空之声。", "千丈之渊，人间灯火已成传说。"]],
   ],
   ACC_LINES: [
     [0, ["字字皆险，全凭运气护体。", "落点豪放，命运起伏。"]],
@@ -64,7 +64,7 @@ const Settlement = {
     const acc = this.pickTier(this.ACC_LINES, s.accuracy);
     const tip = Utils.choice(this.TIPS);
     const lines = [
-      "深度 " + s.depth.toFixed(0) + " 米 · 成语 " + s.idioms + " 个 · 积分 " + s.score,
+      "深度 " + s.depth.toFixed(0) + " 丈 · 成语 " + s.idioms + " 个 · 积分 " + s.score,
       Utils.choice(title[2]),
       Utils.choice(depth[1]),
       Utils.choice(acc[1]),
@@ -187,7 +187,7 @@ const Settlement = {
     const stats = this.lastStats;
     if (!stats) return;
     const c = this._shareCanvas;
-    const text = "我在《成语下落》落到 " + stats.depth.toFixed(0) + " 米深处，拼出 " +
+    const text = "我在《成语下落》落到 " + stats.depth.toFixed(0) + " 丈深处，拼出 " +
       stats.idioms + " 个成语，积分 " + stats.score + "！来挑战我吧！";
     // 优先 Web Share API（可带图）
     try {

@@ -70,14 +70,46 @@
     const autostart = params.get("autostart") === "1";
 
     HUD.init();
+    if (window.Tuning) Tuning.init();
+
+    // 首次加载门：书法字体等资源全部就绪才放行开局（弱网 8 秒兜底）
+    const LoadGate = window.LoadGate = {
+      done: false,
+      _queue: [],
+      whenReady(fn) { this.done ? fn() : this._queue.push(fn); },
+      finish() {
+        if (this.done) return;
+        this.done = true;
+        const ov = dom("load-overlay");
+        if (ov) ov.classList.add("done");
+        const q = this._queue; this._queue = [];
+        q.forEach((fn) => { try { fn(); } catch (e) { } });
+      },
+    };
+    (function waitLoad() {
+      let fin = () => LoadGate.finish();
+      try {
+        if (document.fonts && document.fonts.load) {
+          // 显式请求书法字体（开始界面文字用到它，触发加载），完成后再等全部字体就绪
+          Promise.all([document.fonts.load("1em 'Ma Shan Zheng'")])
+            .then(() => document.fonts.ready)
+            .then(fin, fin);
+        } else {
+          setTimeout(fin, 0);
+        }
+      } catch (e) { setTimeout(fin, 0); }
+      window.addEventListener("load", fin); // 其余资源兜底
+      setTimeout(fin, 8000);                // 弱网兜底：最多等 8 秒
+    })();
     const canvas = dom("game-canvas");
     GAME.init(canvas);
     GAME.hud = HUD;
     refreshBest();
     refreshMute();
 
-    // 开始
+    // 开始（加载完成前禁止开局）
     dom("btn-start").addEventListener("click", () => {
+      if (!LoadGate.done) return;
       SoundFX.ensure();
       SoundFX.play("click");
       hide("screen-start");
@@ -145,16 +177,18 @@
       if (document.hidden && GAME.state === "play" && !GAME.demoMode) GAME.pause();
     });
 
-    // 自动开局（演示/自动化验收）
+    // 自动开局（演示/自动化验收）——等加载门放行
     if (autostart) {
-      setTimeout(() => {
-        if (GAME.state === "start" && !dom("screen-start").classList.contains("hidden")) {
-          SoundFX.muted = true;
-          hide("screen-start");
-          show("screen-game");
-          GAME.startRun();
-        }
-      }, 400);
+      LoadGate.whenReady(() => {
+        setTimeout(() => {
+          if (GAME.state === "start" && !dom("screen-start").classList.contains("hidden")) {
+            SoundFX.muted = true;
+            hide("screen-start");
+            show("screen-game");
+            GAME.startRun();
+          }
+        }, 200);
+      });
     }
 
     console.log("《成语下落》已启动 · 词库", IdiomDB.all.length, "条");

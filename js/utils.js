@@ -15,7 +15,8 @@ const CFG = {
   MARGIN: 26,
   PLAT_H: 16, CHAR_PLAT_W: 72,
   STALL_TIME: 3.0,
-  HP_MAX: 100, HP_DRAIN_BASE: 0.75, HP_DRAIN_PER_STAGE: 0.06, HP_DRAIN_MAX: 3.2,
+  HP_MAX: 100,
+  HP_DRAIN_MIN: 0.1, HP_DRAIN_MAX: 1, HP_DRAIN_FULL: 900, HP_DRAIN_SHAPE: 1, // 生命消耗 S 曲线：0.1→1/秒，900丈封顶
   HP_CORRECT: 0.5, HP_STALL: 1, HP_LEAF: 30,
   HP_WRONG_MIN: 1, HP_WRONG_MAX: 3, WRONG_DEPTH_FULL: 900, // 错字扣血：1→3 渐增，900丈(深潭)封顶
   SCORE_CHAR: 10, SCORE_IDIOM: 150, SCORE_COIN: 20,
@@ -112,6 +113,15 @@ const Utils = {
   wrongPenalty(depth) {
     const t = Utils.clamp(depth / CFG.WRONG_DEPTH_FULL, 0, 1);
     return CFG.HP_WRONG_MIN + (CFG.HP_WRONG_MAX - CFG.HP_WRONG_MIN) * Math.pow(t, 1.6);
+  },
+
+  /** 生命消耗速率：S 曲线（前缓-中陡-后缓），≥封顶深度恒为最大值
+      SHAPE 先对 t 乘方再 smoothstep：>1 前期更缓、<1 更早爬升 */
+  drainRate(depth) {
+    let t = Utils.clamp(depth / CFG.HP_DRAIN_FULL, 0, 1);
+    t = Math.pow(t, Math.max(0.1, CFG.HP_DRAIN_SHAPE));
+    const s = t * t * (3 - 2 * t);
+    return CFG.HP_DRAIN_MIN + (CFG.HP_DRAIN_MAX - CFG.HP_DRAIN_MIN) * s;
   },
 
   /** 按深度取画卷段落（含边界颜色渐变过渡） */

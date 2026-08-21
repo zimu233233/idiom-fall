@@ -43,11 +43,21 @@ const HUD = {
       panel.classList.toggle("open", v);
       if (scrim) scrim.classList.toggle("hidden", !v);
       if (closeBtn) closeBtn.classList.toggle("show", v);
+      // 手机抽屉：打开即静默冻结游戏，返回后续玩（仅冻结由抽屉发起的暂停）
+      if (window.GAME) {
+        if (v) {
+          if (GAME.state === "play") { GAME.pause(true); GAME._drawerPause = true; }
+        } else if (GAME._drawerPause) {
+          GAME._drawerPause = false;
+          if (GAME.state === "pause") GAME.resume();
+        }
+      }
     };
     if (openBtn) openBtn.addEventListener("click", () => open(true));
     if (closeBtn) closeBtn.addEventListener("click", () => open(false));
     if (scrim) scrim.addEventListener("click", () => open(false));
     this.closeDrawer = () => open(false);
+    this.openDrawer = (v) => open(v);
   },
 
   setIdiom(idiom, progress) {

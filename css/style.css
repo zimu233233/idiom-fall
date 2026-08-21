@@ -291,6 +291,50 @@ header.top{display:flex;align-items:center;gap:20px;padding:14px 20px}
   color:#fdf8ee;font-family:'Ma Shan Zheng','KaiTi',serif;font-size:20px}
 .scrim{position:fixed;inset:0;background:rgba(90,75,45,.3);z-index:44}
 
+/* ---- 首次加载遮罩（展卷动画） ---- */
+#load-overlay{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;
+  background:var(--paper);transition:opacity .6s ease}
+#load-overlay.done{opacity:0;pointer-events:none}
+.load-box{display:flex;flex-direction:column;align-items:center;gap:18px;padding:20px}
+.load-seal{width:64px;height:64px;border-radius:10px;display:grid;grid-template-columns:1fr 1fr;
+  place-items:center;background:radial-gradient(circle at 35% 30%,#cf6f5e,#c0574b 60%,#a84339);
+  box-shadow:0 6px 16px rgba(160,70,55,.35),inset 0 0 0 2px rgba(253,248,238,.5);
+  animation:loadBreath 1.6s ease-in-out infinite}
+.load-seal span{color:#fdf8ee;font-family:'Ma Shan Zheng','KaiTi',serif;font-size:22px;line-height:1}
+.load-bar{width:150px;height:4px;border-radius:999px;background:#e6dfc9;overflow:hidden}
+.load-bar i{display:block;height:100%;width:38%;border-radius:999px;
+  background:linear-gradient(90deg,#b9905f,#c0574b);animation:loadSweep 1.2s ease-in-out infinite}
+.load-tip{font-size:12px;color:var(--ink-soft);letter-spacing:2px}
+@keyframes loadBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@keyframes loadSweep{0%{transform:translateX(-160%)}100%{transform:translateX(380%)}}
+
+/* ---- 调参台 ---- */
+.tune-panel{position:fixed;top:16px;right:16px;bottom:16px;width:372px;z-index:60;
+  background:var(--paper);border:1px solid var(--gold);border-radius:14px;
+  box-shadow:0 14px 40px rgba(110,90,50,.3);padding:14px;overflow-y:auto;
+  display:flex;flex-direction:column;gap:10px}
+.tune-head{display:flex;align-items:center;gap:8px}
+.tune-head b{font-family:'Ma Shan Zheng','KaiTi',serif;font-size:20px;color:var(--cinnabar)}
+.tune-head span{flex:1;font-size:11px;color:var(--ink-soft)}
+.tune-head .round-btn{width:28px;height:28px;font-size:13px}
+.tune-curves{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tune-curve span{display:block;font-size:11px;color:var(--ink);margin-bottom:4px}
+.tune-curve canvas{width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fdfaf2}
+.tune-groups h4{margin:10px 0 4px;font-size:13px;color:var(--cinnabar);
+  border-bottom:1px dashed var(--line);padding-bottom:3px}
+.tune-row{padding:4px 0;border-bottom:1px dotted #e8e0cc}
+.tune-row label{font-size:12px;color:var(--ink);font-weight:600}
+.tune-row label small{color:var(--ink-soft);font-weight:400;font-family:monospace;font-size:10px}
+.tune-in{display:flex;align-items:center;gap:6px;margin:2px 0}
+.tune-in input{width:92px;padding:3px 6px;font-size:13px;border:1px solid var(--line);
+  border-radius:7px;background:#fdfaf2;color:var(--ink);font-family:inherit}
+.tune-in input:focus{outline:none;border-color:var(--gold)}
+.tune-in small{font-size:10px;color:var(--ink-soft)}
+.tune-row p{margin:2px 0 0;font-size:11px;line-height:1.6;color:var(--ink-soft)}
+.tune-foot{display:flex;gap:8px;flex-wrap:wrap;padding-top:4px}
+#tune-export-box{width:100%;height:110px;font:11px/1.5 monospace;border:1px solid var(--line);
+  border-radius:8px;background:#fdfaf2;color:var(--ink);padding:8px;resize:vertical}
+
 /* ---- 响应式 ---- */
 @media (max-width: 880px){
   body{overflow:auto}
@@ -330,4 +374,9 @@ header.top{display:flex;align-items:center;gap:20px;padding:14px 20px}
   #btn-drawer{display:none !important}
   #btn-drawer-close{display:none !important}
   #drawer-scrim{display:none !important}
+}
+/* 手机端调参台改为底部抽屉 */
+@media (max-width: 880px){
+  .tune-panel{top:auto;left:8px;right:8px;bottom:8px;width:auto;max-height:72vh}
+  .tune-curves{grid-template-columns:1fr}
 }
