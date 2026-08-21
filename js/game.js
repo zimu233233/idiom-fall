@@ -219,7 +219,7 @@ const Game = {
       Effects.ginkgo(this.player.x, this.player.y - 40, 16);
       Effects.floatText(this.player.x, this.player.y - 100, "学富五车 · 收益翻倍", "#9c7a35", 21);
       SoundFX.play("boost");
-      this.toast("学富五车：8秒内下坠减缓、收益翻倍");
+      this.toast("学富五车：短时间内下坠减缓、收益翻倍");
     }
   },
 
@@ -250,7 +250,7 @@ const Game = {
     this.player.ground = null;
     this.player.standT = 0;
     Effects.ripple(this.player.x, this.player.y - 6);
-    Effects.floatText(this.player.x, this.player.y - 50, "浮石自沉 · -1", "#8d8672", 15);
+    Effects.floatText(this.player.x, this.player.y - 50, "浮石自沉 · -" + CFG.HP_STALL, "#8d8672", 15);
     // 停滞只碎平台扣血清连击，成语进度保留，落回下方文字层继续
   },
 
