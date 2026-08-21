@@ -61,10 +61,12 @@ const Game = {
     Items.reset();
     Effects.reset();
     this.cam.reset();
+    this.cam.depth = 0;
     Input.reset();
     this.time = 0;
     this.slowT = 0;
     this.celebrateT = 0;
+    if (HUD.closeDrawer) HUD.closeDrawer();
     const forcedWord = forced || this.forcedIdiom || null;
     const first = IdiomDB.pickIdiom(1, forcedWord);
     this.world.reset(first);
@@ -147,6 +149,12 @@ const Game = {
     this.world.prune(this.cam.y);
     Items.update(dt, this.player, this);
     Effects.update(dt);
+    this.cam.depth = this.depthM();
+
+    // 学富五车期间银杏叶随行飘落
+    if (Scoring.boostT > 0 && Utils.chance(dt * 2.2)) {
+      Effects.ginkgo(this.player.x + Utils.rand(-30, 30), this.cam.y + Utils.rand(20, 120), 1);
+    }
 
     // 停滞判定：同一平台停留超过3秒
     if (this.player.grounded && this.player.standT >= CFG.STALL_TIME) {
@@ -178,15 +186,15 @@ const Game = {
   onCorrect(plat) {
     const gain = Scoring.onCorrect();
     plat.consumed = true;
-    Effects.burst(plat.x, plat.y - 10, PALETTE.correct, 16, 230);
+    Effects.burst(plat.x, plat.y - 10, PALETTE.mineral, 12, 190);
     Effects.inkDissolve(plat.x, plat.y - 10, plat.char);
-    Effects.floatText(plat.x, plat.y - 34, "+" + gain, PALETTE.correct, 15);
+    Effects.floatText(plat.x, plat.y - 34, "+" + gain, PALETTE.mineralDk, 19);
     if (Scoring.combo >= 2) {
       Effects.floatText(this.player.x, this.player.y - 52,
-        "连击 ×" + Scoring.combo + "（" + Scoring.multiplier().toFixed(2) + "倍）", PALETTE.gold, 13);
+        "连击 ×" + Scoring.combo + " · " + Scoring.multiplier().toFixed(2) + "倍", "#9c7a35", 15);
     }
     SoundFX.play("correct");
-    this.world.breakPlatform(plat);   // 正确字平台墨染消散
+    this.world.breakPlatform(plat);   // 正确字平台化作墨花消散
     this.player.bounceUp(430);        // 主角小跳一下
     this.world.progress++;
     HUD.setIdiom(this.world.idiom, this.world.progress);
@@ -195,10 +203,11 @@ const Game = {
 
   onIdiomComplete() {
     const r = Scoring.onIdiomComplete(this.world.perfect);
-    Effects.flash(PALETTE.gold, 0.16, 0.5);
-    Effects.burst(this.player.x, this.player.y - 20, PALETTE.gold, 30, 320);
+    Effects.glow(this.player.x, this.player.y - 20, "rgba(222,186,105,0.5)", 130, 0.9);
+    Effects.ginkgo(this.player.x, this.player.y - 30, 10);
+    Effects.burst(this.player.x, this.player.y - 20, PALETTE.gold, 16, 240);
     Effects.floatText(this.player.x, this.player.y - 70,
-      this.world.idiom.w + "！ +" + r.base, PALETTE.gold, 19);
+      this.world.idiom.w + "！ +" + r.base, PALETTE.mineralDk, 22);
     SoundFX.play("complete");
     this.celebrateT = 0.8; // 加速进入下一段落
     Items.maybeDrop(this.player.x, this.player.y);
@@ -206,20 +215,21 @@ const Game = {
     this.world.setIdiom(IdiomDB.pickIdiom(this.stage()));
     HUD.setIdiom(this.world.idiom, 0);
     if (r.triggerBoost) {
-      Effects.flash(PALETTE.gold, 0.32, 0.8);
-      Effects.floatText(this.player.x, this.player.y - 100, "学富五车！积分翻倍", PALETTE.gold, 20);
+      Effects.glow(this.player.x, this.player.y - 20, "rgba(233,201,120,0.55)", 220, 1.2);
+      Effects.ginkgo(this.player.x, this.player.y - 40, 16);
+      Effects.floatText(this.player.x, this.player.y - 100, "学富五车 · 收益翻倍", "#9c7a35", 21);
       SoundFX.play("boost");
-      this.toast("学富五车：8秒内下落减缓、积分翻倍");
+      this.toast("学富五车：8秒内下坠减缓、收益翻倍");
     }
   },
 
   onWrong(plat) {
     Scoring.onWrong();
     this.world.perfect = false;
-    Effects.flash(PALETTE.wrong, 0.3, 0.45);
-    Effects.burst(plat.x, plat.y - 10, PALETTE.wrong, 22, 280);
-    Effects.floatText(plat.x, plat.y - 36, "错字！-3生命", PALETTE.wrong, 16);
-    this.cam.triggerShake(9); // 仅错误时震屏
+    // 柔化反馈：涟漪轻荡，无红闪无震屏
+    Effects.ripple(plat.x, plat.y - 14);
+    Effects.burst(plat.x, plat.y - 10, "#8fa6ad", 10, 150);
+    Effects.floatText(plat.x, plat.y - 36, "涟漪散字 · -3", PALETTE.cinnabar, 16);
     SoundFX.play("wrong");
     this.world.breakPlatform(plat);
     this.player.bounceUp(CFG.BOUNCE_V); // 弹回上一层
@@ -237,7 +247,8 @@ const Game = {
     this.player.grounded = false;
     this.player.ground = null;
     this.player.standT = 0;
-    Effects.floatText(this.player.x, this.player.y - 50, "平台碎裂！-1生命", "#c9b8e8", 15);
+    Effects.ripple(this.player.x, this.player.y - 6);
+    Effects.floatText(this.player.x, this.player.y - 50, "浮石自沉 · -1", "#8d8672", 15);
     // 停滞只碎平台扣血清连击，成语进度保留，落回下方文字层继续
   },
 
@@ -245,7 +256,7 @@ const Game = {
     if (this.state === "over") return;
     this.state = "over";
     SoundFX.play("over");
-    Effects.flash("#000000", 0.5, 0.9);
+    Effects.flash("rgba(120,100,60,0.35)", 0.4, 0.9);
     const stats = {
       score: Math.floor(Scoring.score),
       depth: Scoring.maxDepthM,
@@ -294,36 +305,36 @@ const Game = {
     cam.drawDepthRuler(ctx);
     this.world.draw(ctx, cam, this.time);
     Items.draw(ctx, cam, this.time);
-    // 学富五车金色脉动光环（宏观+微观）
+    // 学富五车：暖金光晕环随行（无全屏爆闪）
     if (Scoring.boostT > 0 && this.player) {
-      const px = this.player.x, py = this.player.y - 15 - cam.y;
-      const pulse = 0.6 + 0.4 * Math.sin(this.time * 7);
-      const g = ctx.createRadialGradient(px, py, 4, px, py, 70);
-      g.addColorStop(0, "rgba(255,212,71," + (0.32 * pulse) + ")");
-      g.addColorStop(1, "rgba(255,212,71,0)");
+      const px = this.player.x, py = this.player.y - 26 - cam.y;
+      const pulse = 0.6 + 0.4 * Math.sin(this.time * 5);
+      const g = ctx.createRadialGradient(px, py, 6, px, py, 78);
+      g.addColorStop(0, "rgba(233,201,120," + (0.34 * pulse) + ")");
+      g.addColorStop(1, "rgba(233,201,120,0)");
       ctx.fillStyle = g;
-      ctx.fillRect(px - 70, py - 70, 140, 140);
-      // 全屏金光脉动
-      ctx.globalAlpha = 0.06 * pulse;
-      ctx.fillStyle = PALETTE.gold;
-      ctx.fillRect(-20, -20, CFG.W + 40, CFG.H + 40);
+      ctx.fillRect(px - 78, py - 78, 156, 156);
+      ctx.globalAlpha = 0.35 * pulse;
+      ctx.strokeStyle = "rgba(194,161,99,.8)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(px, py, 62, 0, Math.PI * 2); ctx.stroke();
       ctx.globalAlpha = 1;
     }
-    // 通关加速金光
+    // 通关加速：淡淡暖光
     if (this.celebrateT > 0) {
-      ctx.globalAlpha = 0.12 * (this.celebrateT / 0.8);
-      ctx.fillStyle = PALETTE.gold;
+      ctx.globalAlpha = 0.07 * (this.celebrateT / 0.8);
+      ctx.fillStyle = "#e9c978";
       ctx.fillRect(-20, -20, CFG.W + 40, CFG.H + 40);
       ctx.globalAlpha = 1;
     }
     this.player.draw(ctx, cam, this.time);
     Effects.draw(ctx, cam);
-    // 低生命红色警示
+    // 低生命：极淡朱砂脉动提示（克制的呼吸感）
     if (this.state === "play" && Scoring.hp < 25) {
-      const pulse = 0.5 + 0.5 * Math.sin(this.time * 6);
-      const vg = ctx.createRadialGradient(CFG.W / 2, CFG.H / 2, CFG.H * 0.3, CFG.W / 2, CFG.H / 2, CFG.H * 0.72);
-      vg.addColorStop(0, "rgba(200,30,60,0)");
-      vg.addColorStop(1, "rgba(200,30,60," + (0.35 * pulse) + ")");
+      const pulse = 0.5 + 0.5 * Math.sin(this.time * 4);
+      const vg = ctx.createRadialGradient(CFG.W / 2, CFG.H / 2, CFG.H * 0.34, CFG.W / 2, CFG.H / 2, CFG.H * 0.72);
+      vg.addColorStop(0, "rgba(192,87,75,0)");
+      vg.addColorStop(1, "rgba(192,87,75," + (0.16 * pulse) + ")");
       ctx.fillStyle = vg;
       ctx.fillRect(0, 0, CFG.W, CFG.H);
     }

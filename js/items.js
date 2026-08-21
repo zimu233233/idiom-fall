@@ -98,12 +98,15 @@ const Items = {
       ctx.save();
       ctx.translate(d.x, sy + bob);
       if (d.kind === "coin") {
-        ctx.fillStyle = "#c8951c";
-        ctx.fillRect(-6, -6, 12, 12);
-        ctx.fillStyle = PALETTE.gold;
-        ctx.fillRect(-4, -4, 8, 8);
-        ctx.fillStyle = "#8a6a10";
-        ctx.fillRect(-1, -2, 2, 4);
+        // 方孔铜钱
+        ctx.fillStyle = "#b28a45";
+        ctx.beginPath(); ctx.arc(0, 0, 6.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#d9b36c";
+        ctx.beginPath(); ctx.arc(0, 0, 5.2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#fdfaf2";
+        ctx.fillRect(-1.8, -1.8, 3.6, 3.6);
+        ctx.strokeStyle = "#b28a45"; ctx.lineWidth = 0.8;
+        ctx.strokeRect(-1.8, -1.8, 3.6, 3.6);
       } else if (d.kind === "clock") {
         ctx.fillStyle = "#274068";
         ctx.fillRect(-7, -7, 14, 14);

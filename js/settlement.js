@@ -82,7 +82,7 @@ const Settlement = {
       if (el) el.textContent = String(v);
     };
     set("over-score", stats.score);
-    set("over-depth", stats.depth.toFixed(0) + " m");
+    set("over-depth", stats.depth.toFixed(0) + " 丈");
     set("over-idioms", stats.idioms + " 个");
     set("over-acc", (stats.accuracy * 100).toFixed(0) + "%");
     set("over-wrong", stats.wrongs + " 次");
@@ -106,51 +106,79 @@ const Settlement = {
     if (screen) screen.classList.add("hidden");
   },
 
-  /** 生成分享卡片（Canvas 绘制结算画面） */
+  /** 生成分享卡片：宣纸书签竖条（画卷裁条） */
   buildShareCard(stats, comment) {
-    const W = 600, H = 860;
+    const W = 600, H = 900;
     const c = document.createElement("canvas");
     c.width = W; c.height = H;
     const g = c.getContext("2d");
-    // 背景
-    const grad = g.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, "#170b14");
-    grad.addColorStop(1, "#321426");
-    g.fillStyle = grad; g.fillRect(0, 0, W, H);
-    g.strokeStyle = "#3a4a8c"; g.lineWidth = 4;
-    g.strokeRect(14, 14, W - 28, H - 28);
-    g.textAlign = "center";
-    g.fillStyle = "#ffd447";
-    g.font = "bold 52px 'Microsoft YaHei', sans-serif";
-    g.fillText("成语下落", W / 2, 96);
-    g.fillStyle = "#cbb8e8";
-    g.font = "22px 'Microsoft YaHei', sans-serif";
-    g.fillText(comment.title, W / 2, 140);
-    // 数据块
+    const roundRect = (x, y, w, h, r) => {
+      g.beginPath();
+      g.moveTo(x + r, y);
+      g.arcTo(x + w, y, x + w, y + h, r);
+      g.arcTo(x + w, y + h, x, y + h, r);
+      g.arcTo(x, y + h, x, y, r);
+      g.arcTo(x, y, x + w, y, r);
+      g.closePath();
+    };
+    // 宣纸底 + 边框
+    g.fillStyle = "#f6f1e5"; g.fillRect(0, 0, W, H);
+    g.strokeStyle = "#e0d6bd"; g.lineWidth = 3;
+    roundRect(18, 18, W - 36, H - 36, 20); g.stroke();
+    // 顶部朱砂印章（成语下落 2x2）
+    g.save();
+    g.translate(84, 84); g.rotate(-0.045);
+    const sg = g.createRadialGradient(0, 0, 4, 0, 0, 46);
+    sg.addColorStop(0, "#cf6f5e"); sg.addColorStop(0.6, "#c0574b"); sg.addColorStop(1, "#a84339");
+    g.fillStyle = sg;
+    roundRect(-46, -46, 92, 92, 10); g.fill();
+    g.fillStyle = "#fdf8ee";
+    g.font = "34px " + FONT_CAL; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText("成", -20, -20); g.fillText("语", 20, -20);
+    g.fillText("下", -20, 20); g.fillText("落", 20, 20);
+    g.restore();
+    // 竖排主标题
+    g.fillStyle = "#3a3f44";
+    g.font = "52px " + FONT_CAL; g.textAlign = "center"; g.textBaseline = "middle";
+    "成语下落".split("").forEach((ch, i) => g.fillText(ch, W - 96, 120 + i * 62));
+    g.strokeStyle = "#d8cdb0"; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(W - 148, 112); g.lineTo(W - 148, 400); g.stroke();
+    g.fillStyle = "#c0574b";
+    g.beginPath(); g.arc(W - 148, 104, 4, 0, Math.PI * 2); g.fill();
+    // 品第
+    g.fillStyle = "#9c7a35";
+    g.font = "26px " + FONT_CAL;
+    g.fillText("【" + comment.title + "】", W / 2, 260);
+    // 数据（行书横排）
     const rows = [
-      ["积分", String(stats.score)], ["深度", stats.depth.toFixed(0) + " m"],
-      ["成语", stats.idioms + " 个"], ["正确率", (stats.accuracy * 100).toFixed(0) + "%"],
+      ["坠 深", stats.depth.toFixed(0) + " 丈"],
+      ["成语", stats.idioms + " 卷"],
+      ["分数", String(stats.score)],
+      ["正确", (stats.accuracy * 100).toFixed(0) + "%"],
     ];
-    g.font = "bold 30px 'Microsoft YaHei', sans-serif";
     rows.forEach((r, i) => {
-      const x = W / 2 + (i % 2 === 0 ? -140 : 140);
-      const y = 220 + Math.floor(i / 2) * 90;
-      g.fillStyle = "#8f86b8"; g.font = "20px 'Microsoft YaHei', sans-serif";
-      g.fillText(r[0], x, y);
-      g.fillStyle = "#f3ecd8"; g.font = "bold 34px 'Microsoft YaHei', sans-serif";
-      g.fillText(r[1], x, y + 40);
+      const y = 330 + i * 76;
+      g.fillStyle = "#8d8672"; g.font = "22px " + FONT_BODY; g.textAlign = "right";
+      g.fillText(r[0], W / 2 - 24, y);
+      g.fillStyle = "#3a3f44"; g.font = "34px " + FONT_CAL; g.textAlign = "left";
+      g.fillText(r[1], W / 2 + 12, y);
     });
-    // 评语
-    g.textAlign = "left";
-    g.fillStyle = "#cbb8e8";
-    g.font = "22px 'Microsoft YaHei', sans-serif";
-    comment.lines.forEach((l, i) => {
-      g.fillText(l, 60, 460 + i * 38);
+    // 题跋两句
+    g.fillStyle = "#6b7076"; g.font = "21px " + FONT_BODY; g.textAlign = "center";
+    comment.lines.slice(1, 3).forEach((l, i) => {
+      g.fillText(l, W / 2, 660 + i * 40);
     });
-    g.textAlign = "center";
-    g.fillStyle = "#6a5f8a";
-    g.font = "18px 'Microsoft YaHei', sans-serif";
-    g.fillText("—— 在「成语深渊」落下你的名字 ——", W / 2, H - 60);
+    // 底部落款印
+    g.save();
+    g.translate(W - 108, H - 116); g.rotate(0.06);
+    g.fillStyle = "#c0574b";
+    roundRect(-34, -34, 68, 68, 8); g.fill();
+    g.fillStyle = "#fdf8ee";
+    g.font = "24px " + FONT_CAL; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText("落", 0, -13); g.fillText("卷", 0, 13);
+    g.restore();
+    g.fillStyle = "#a9a294"; g.font = "17px " + FONT_BODY; g.textAlign = "center";
+    g.fillText("青绿手卷 · 一滴墨的旅程", W / 2, H - 52);
 
     this._shareCanvas = c;
   },

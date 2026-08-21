@@ -232,11 +232,39 @@ class World {
     return null;
   }
 
+  roundRect(ctx, x, y, w, h, r) {
+    r = Math.min(r, h / 2, w / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  drawButterfly(ctx, x, y, time) {
+    const flap = Math.abs(Math.sin(time * 9));
+    ctx.save();
+    ctx.translate(x, y + Math.sin(time * 3) * 3);
+    ctx.rotate(-0.12);
+    // 双翅
+    ctx.fillStyle = "#eaa58c";
+    ctx.beginPath(); ctx.ellipse(-5, -2, 5.5 * flap + 1.5, 6.5, -0.35, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(5, -2, 5.5 * flap + 1.5, 6.5, 0.35, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#f4d3bf";
+    ctx.beginPath(); ctx.ellipse(-3.5, -1, 2.6 * flap + 1, 3.6, -0.35, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(3.5, -1, 2.6 * flap + 1, 3.6, 0.35, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#5a4f45";
+    ctx.fillRect(-1, -5, 2, 10);
+    ctx.restore();
+  }
+
   draw(ctx, cam, time) {
     const target = this.nextTarget(cam.y - 40);
     for (const p of this.platforms) {
       const sy = p.y - cam.y;
-      if (sy < -40 || sy > CFG.H + 40) continue;
+      if (sy < -50 || sy > CFG.H + 50) continue;
       let alpha = 1;
       if (p.breaking > 0) {
         const q = Math.min(1, p.breaking / 0.6);
@@ -244,52 +272,89 @@ class World {
       }
       ctx.save();
       ctx.globalAlpha = alpha;
-      // 落地压弹（中观反馈）
       const bounce = p.bounceT > 0 ? Math.sin(p.bounceT * Math.PI) : 0;
-      const h = p.h + bounce * 4;
-      const yOff = p.breaking > 0 ? p.breaking * 140 : 0;
+      const h = p.h + bounce * 3;
+      const yOff = p.breaking > 0 ? p.breaking * 90 : 0;
       const py = sy + (p.h - h) + yOff;
+      const px = p.x - p.w / 2;
 
-      // 平台主体（靛蓝 + 像素描边）
-      ctx.fillStyle = PALETTE.platformEdge;
-      ctx.fillRect(Math.round(p.x - p.w / 2) - 2, Math.round(py) - 2, Math.round(p.w) + 4, Math.round(h) + 4);
-      ctx.fillStyle = p.consumed ? "#2a3260" : PALETTE.platform;
-      ctx.fillRect(Math.round(p.x - p.w / 2), Math.round(py), Math.round(p.w), Math.round(h));
-      ctx.fillStyle = p.consumed ? "#39406e" : PALETTE.platformLit;
-      ctx.fillRect(Math.round(p.x - p.w / 2), Math.round(py), Math.round(p.w), 3);
-      // 像素方角缺口
-      ctx.fillStyle = "rgba(0,0,0,0)";
-      ctx.clearRect(Math.round(p.x - p.w / 2) - 2, Math.round(py) - 2, 3, 3);
-      ctx.clearRect(Math.round(p.x + p.w / 2) - 1, Math.round(py) - 2, 3, 3);
+      // 浮石投影
+      ctx.globalAlpha = alpha * 0.18;
+      ctx.fillStyle = "#5a6a52";
+      this.roundRect(ctx, px + 3, py + 5, p.w, h, 8);
+      ctx.fill();
 
-      // 汉字
-      if (p.char && !p.consumed) {
-        ctx.font = "bold 21px 'Microsoft YaHei', sans-serif";
-        ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillStyle = PALETTE.text;
-        ctx.fillText(p.char, p.x, py - 12 + bounce * 2);
+      // 浮石主体（圆角渐变石板）
+      ctx.globalAlpha = alpha * (p.consumed ? 0.5 : 1);
+      const g = ctx.createLinearGradient(0, py, 0, py + h);
+      g.addColorStop(0, PALETTE.slabTop);
+      g.addColorStop(0.55, PALETTE.slabMid);
+      g.addColorStop(1, PALETTE.slabDk);
+      ctx.fillStyle = g;
+      this.roundRect(ctx, px, py, p.w, h, 8);
+      ctx.fill();
+      // 顶部高光
+      ctx.fillStyle = PALETTE.slabHi;
+      ctx.globalAlpha = alpha * (p.consumed ? 0.4 : 0.9);
+      this.roundRect(ctx, px + 3, py + 1.5, p.w - 6, 3, 2);
+      ctx.fill();
+      // 石上草叶
+      if (!p.consumed) {
+        ctx.globalAlpha = alpha * 0.85;
+        ctx.fillStyle = PALETTE.grass1;
+        this.roundRect(ctx, px + 10, py - 3.5, 16, 5, 3); ctx.fill();
+        ctx.fillStyle = PALETTE.grass2;
+        this.roundRect(ctx, px + p.w - 28, py - 3, 14, 4.5, 3); ctx.fill();
       }
-      // 排雷锤后正确平台泛光提示
-      if (p.isChoice && p.correct && p.revealed && !p.consumed) {
-        ctx.globalAlpha = 0.5 + 0.3 * Math.sin(time * 6);
-        ctx.strokeStyle = PALETTE.gold;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(Math.round(p.x - p.w / 2) - 3, Math.round(py) - 20, Math.round(p.w) + 6, 20);
+
+      // 汉字（书法体 + 白衬影）
+      if (p.char && !p.consumed) {
+        ctx.globalAlpha = alpha;
+        ctx.font = "24px " + FONT_CAL;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillStyle = "rgba(255,255,255,.6)";
+        ctx.fillText(p.char, p.x, py - 16 + 1.5 + bounce * 2);
+        ctx.fillStyle = PALETTE.ink;
+        ctx.fillText(p.char, p.x, py - 16 + bounce * 2);
       }
       ctx.restore();
     }
-    // 目标平台闪烁箭头（可玩性提示）
+
+    // 当前目标：朱批椭圆圈 + 引路蝶
     if (target) {
       const sy = target.y - cam.y;
-      const blink = 0.45 + 0.4 * Math.sin(time * 5);
+      const pulse = 0.55 + 0.3 * Math.sin(time * 4);
       ctx.save();
-      ctx.globalAlpha = blink;
-      ctx.fillStyle = PALETTE.gold;
-      const ax = target.x, ay = sy - 34 + Math.sin(time * 5) * 3;
+      // 金晕浮石
+      ctx.globalAlpha = 0.35 * pulse + 0.2;
+      ctx.strokeStyle = PALETTE.gold;
+      ctx.lineWidth = 3.5;
+      this.roundRect(ctx, target.x - target.w / 2 - 3, sy - 3, target.w + 6, target.h + 6, 10);
+      ctx.stroke();
+      // 朱批圈（圈住目标字）
+      ctx.globalAlpha = 0.5 + 0.4 * pulse;
+      ctx.strokeStyle = PALETTE.cinnabar;
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(ax - 7, ay - 8); ctx.lineTo(ax + 7, ay - 8); ctx.lineTo(ax, ay + 2);
-      ctx.closePath(); ctx.fill();
-      ctx.fillRect(ax - 2, ay - 16, 4, 8);
+      ctx.ellipse(target.x, sy - 16, 16, 14.5, -0.14, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+      // 引路蝶（上方盘旋）
+      this.drawButterfly(ctx, target.x, sy - 44, time);
+    }
+
+    // 排雷锤后正确平台金圈提示
+    for (const p of this.platforms) {
+      if (!(p.isChoice && p.correct && p.revealed && !p.consumed && p.breaking <= 0)) continue;
+      const sy = p.y - cam.y;
+      if (sy < -40 || sy > CFG.H + 40) continue;
+      ctx.save();
+      ctx.globalAlpha = 0.4 + 0.25 * Math.sin(time * 5);
+      ctx.strokeStyle = PALETTE.gold;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(p.x, sy - 16, 16, 14.5, -0.14, 0, Math.PI * 2);
+      ctx.stroke();
       ctx.restore();
     }
   }
