@@ -224,18 +224,20 @@ const Game = {
   },
 
   onWrong(plat) {
-    Scoring.onWrong();
+    const pen = Utils.wrongPenalty(this.depthM());
+    Scoring.onWrong(pen);
     this.world.perfect = false;
     // 柔化反馈：涟漪轻荡，无红闪无震屏
     Effects.ripple(plat.x, plat.y - 14);
     Effects.burst(plat.x, plat.y - 10, "#8fa6ad", 10, 150);
-    Effects.floatText(plat.x, plat.y - 36, "涟漪散字 · -3", PALETTE.cinnabar, 16);
+    const penText = Number.isInteger(pen) ? String(pen) : pen.toFixed(1);
+    Effects.floatText(plat.x, plat.y - 36, "涟漪散字 · -" + penText, PALETTE.cinnabar, 16);
     SoundFX.play("wrong");
     this.world.breakPlatform(plat);
     this.player.bounceUp(CFG.BOUNCE_V); // 弹回上一层
-    // 当前成语进度重置，下方文字层碎裂重建
-    this.world.rebuildBelow(this.player.y + 40);
-    HUD.setIdiom(this.world.idiom, 0);
+    // 成语进度保留：碎掉下方文字层，从当前进度字重建（与错过层同机制）
+    this.world.clearBelow(this.player.y + 40, this.world.progress);
+    HUD.setIdiom(this.world.idiom, this.world.progress);
   },
 
   onStall() {

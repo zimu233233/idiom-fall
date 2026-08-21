@@ -1,5 +1,5 @@
 "use strict";
-/* 世界：成语文字层生成（每层3个带字平台：1正2误 + 无字平台）、碰撞、碎裂、进度重置重建 */
+/* 世界：成语文字层生成（每层3个带字平台：1正2误 + 无字平台）、碰撞、碎裂、按进度重建 */
 class World {
   constructor(game) {
     this.game = game;
@@ -141,7 +141,7 @@ class World {
     return true;
   }
 
-  /** 碎掉玩家下方全部文字层并从 fromIndex 字重建（错误时 fromIndex=0，错过时=当前进度） */
+  /** 碎掉玩家下方全部文字层并从 fromIndex 字重建（错过/错选时 fromIndex=当前进度） */
   clearBelow(fromY, fromIndex) {
     const keepRows = [];
     for (const row of this.rows) {
@@ -163,12 +163,6 @@ class World {
     }
     this.genIndex = fromIndex;
     this.sinceChoice = 0;
-  }
-
-  /** 选错字：进度归零并碎掉下方文字层重建 */
-  rebuildBelow(fromY) {
-    this.progress = 0;
-    this.clearBelow(fromY, 0);
   }
 
   breakPlatform(p) {

@@ -28,24 +28,43 @@ const Items = {
   },
 
   makeDrop(x, y, kind) {
-    return { x, y, vy: 40, kind, t: 0 };
+    return { x, y, vy: 40, kind, t: 0, rest: null };
   },
 
   update(dt, player, game) {
+    const plats = game.world.platforms;
     for (let i = this.drops.length - 1; i >= 0; i--) {
       const d = this.drops[i];
       d.t += dt;
-      d.vy = Math.min(d.vy + 500 * dt, 230);
-      d.y += d.vy * dt;
-      d.x += Math.sin(d.t * 4) * 12 * dt;
-      // 与主角碰撞（捡拾）
+      if (d.rest) {
+        // 所靠平台碎裂/消亡则脱离，继续下落
+        if (d.rest.dead || d.rest.breaking > 0) d.rest = null;
+        else d.y = d.rest.y - 8;
+      }
+      if (!d.rest) {
+        const prevY = d.y;
+        d.vy = Math.min(d.vy + 500 * dt, 230);
+        d.y += d.vy * dt;
+        d.x += Math.sin(d.t * 4) * 12 * dt;
+        // 下落中被无字平台接住（带字平台穿过）
+        for (const p of plats) {
+          if (p.char != null || p.dead || p.breaking > 0) continue;
+          if (prevY <= p.y + 2 && d.y >= p.y - 8 && Math.abs(d.x - p.x) <= p.w / 2 + 4) {
+            d.rest = p;
+            d.y = p.y - 8;
+            d.vy = 0;
+            break;
+          }
+        }
+      }
+      // 与主角碰撞（捡拾，停靠中同样可拾取）
       if (Math.abs(d.x - player.x) < 24 && Math.abs(d.y - (player.y - 14)) < 30) {
         this.collect(d, game);
         this.drops.splice(i, 1);
         continue;
       }
-      // 掉出视野销毁
-      if (d.y - game.cam.y > CFG.H + 60) this.drops.splice(i, 1);
+      // 掉出视野销毁（下方滚出 / 停靠后被甩到画面上方）
+      if (d.y - game.cam.y > CFG.H + 60 || d.y - game.cam.y < -80) this.drops.splice(i, 1);
     }
   },
 

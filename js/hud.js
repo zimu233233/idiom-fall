@@ -125,10 +125,16 @@ const HUD = {
         if (el) el.classList.toggle("has", Items.inv[k] > 0);
       });
 
-    // 气息
+    // 气息：血越少条色连续趋向朱砂（绿→赭→红两段插值）
     const pct = Utils.clamp(S.hp / CFG.HP_MAX, 0, 1);
-    const color = pct > 0.5 ? "linear-gradient(90deg,#8fb08a,#b7d0a0)"
-      : (pct > 0.25 ? "linear-gradient(90deg,#d9b36c,#e6c98d)" : "linear-gradient(90deg,#c0574b,#d3776b)");
+    const t = 1 - pct;
+    const c1 = t <= 0.5
+      ? Utils.lerpColor("#8fb08a", "#d9b36c", t / 0.5)
+      : Utils.lerpColor("#d9b36c", "#c0574b", (t - 0.5) / 0.5);
+    const c2 = t <= 0.5
+      ? Utils.lerpColor("#b7d0a0", "#e6c98d", t / 0.5)
+      : Utils.lerpColor("#e6c98d", "#d3776b", (t - 0.5) / 0.5);
+    const color = "linear-gradient(90deg," + c1 + "," + c2 + ")";
     const fill = this.els["hp-fill"];
     if (fill) { fill.style.width = (pct * 100).toFixed(1) + "%"; fill.style.background = color; }
     const mfill = this.els["m-hp-fill"];

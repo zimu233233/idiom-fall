@@ -52,11 +52,11 @@ const Scoring = {
     return { base, triggerBoost };
   },
 
-  /** 落在错字上：连击清零、-3生命 */
-  onWrong() {
+  /** 落在错字上：连击清零、扣血（随深度 1→3 渐增，由调用方按深度算好传入） */
+  onWrong(pen) {
     this.combo = 0;
     this.wrongs++;
-    this.hp -= CFG.HP_WRONG;
+    this.hp -= pen || CFG.HP_WRONG_MIN;
   },
 
   /** 停滞碎裂：连击清零、-1生命 */

@@ -16,7 +16,8 @@ const CFG = {
   PLAT_H: 16, CHAR_PLAT_W: 72,
   STALL_TIME: 3.0,
   HP_MAX: 100, HP_DRAIN_BASE: 0.75, HP_DRAIN_PER_STAGE: 0.06, HP_DRAIN_MAX: 3.2,
-  HP_CORRECT: 0.5, HP_WRONG: 3, HP_STALL: 1, HP_LEAF: 30,
+  HP_CORRECT: 0.5, HP_STALL: 1, HP_LEAF: 30,
+  HP_WRONG_MIN: 1, HP_WRONG_MAX: 3, WRONG_DEPTH_FULL: 900, // 错字扣血：1→3 渐增，900丈(深潭)封顶
   SCORE_CHAR: 10, SCORE_IDIOM: 150, SCORE_COIN: 20,
   COMBO_STEP: 0.25, COMBO_MAX: 3.5,
   BOOST_TIME: 8, BOOST_NEED: 3,       // 学富五车
@@ -105,6 +106,12 @@ const Utils = {
     if (t >= 1) return b;
     const ca = Utils.hexToRgb(a), cb = Utils.hexToRgb(b);
     return Utils.rgbToHex(Utils.lerp(ca[0], cb[0], t), Utils.lerp(ca[1], cb[1], t), Utils.lerp(ca[2], cb[2], t));
+  },
+
+  /** 错字扣血：深度 0 → 1，900丈 → 3；幂 1.6 让初期增长慢、深潭封顶 */
+  wrongPenalty(depth) {
+    const t = Utils.clamp(depth / CFG.WRONG_DEPTH_FULL, 0, 1);
+    return CFG.HP_WRONG_MIN + (CFG.HP_WRONG_MAX - CFG.HP_WRONG_MIN) * Math.pow(t, 1.6);
   },
 
   /** 按深度取画卷段落（含边界颜色渐变过渡） */
