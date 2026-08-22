@@ -80,7 +80,8 @@ const Game = {
   },
 
   useItem(kind) {
-    if (this.state !== "play") return;
+    // 游戏进行中、或"抽屉冻结"期间可用道具（多宝阁就在抽屉里）；手动暂停/结算不可用
+    if (this.state !== "play" && this._drawerPause !== true) return;
     Items.use(kind, this);
   },
 

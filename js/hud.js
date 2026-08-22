@@ -29,7 +29,7 @@ const HUD = {
       .forEach(([id, kind]) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener("click", () => {
-          if (window.GAME && GAME.state === "play") GAME.useItem(kind);
+          if (window.GAME) GAME.useItem(kind); // 状态守卫统一在 useItem（抽屉冻结中也可用）
         });
       });
 
