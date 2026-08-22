@@ -16,23 +16,26 @@ const CFG = {
   PLAT_H: 16, CHAR_PLAT_W: 72,
   STALL_TIME: 3.0,
   HP_MAX: 100,
-  HP_DRAIN_MIN: 0.1, HP_DRAIN_MAX: 1, HP_DRAIN_FULL: 900, HP_DRAIN_SHAPE: 1, // 生命消耗 S 曲线：0.1→1/秒，900丈封顶
+  HP_DRAIN_MIN: 0.1, HP_DRAIN_MAX: 1, HP_DRAIN_FULL: 5000, HP_DRAIN_SHAPE: 1, // 生命消耗 S 曲线：0.1→1/秒，5000丈(深潭)封顶
   HP_CORRECT: 0.5, HP_STALL: 1, HP_LEAF: 30,
-  HP_WRONG_MIN: 1, HP_WRONG_MAX: 3, WRONG_DEPTH_FULL: 900, // 错字扣血：1→3 渐增，900丈(深潭)封顶
+  HP_WRONG_MIN: 1, HP_WRONG_MAX: 3, WRONG_DEPTH_FULL: 5000, // 错字扣血：1→3 渐增，5000丈(深潭)封顶
   SCORE_CHAR: 10, SCORE_IDIOM: 150, SCORE_COIN: 20,
   COMBO_STEP: 0.25, COMBO_MAX: 3.5,
   BOOST_TIME: 8, BOOST_NEED: 3,       // 学富五车
   SLOW_TIME: 5,                       // 减速表
   ITEM_CHANCE: 0.28,
   HAMMER_LAYERS: 4,
-  STAGE_M: 60,                        // 每60米深度 = 1难度段
+  STAGE_M: 150,                       // 每150丈深度 = 1难度段
+  SEG_DIFF_STEP: 3,                   // 分区难度加成：每跨越一个画卷分区，难度段号额外+3（0=关闭分区梯度）
   COMMON_UNTIL_STAGE: 3,              // 前3关用常用词库
   ALBUM_TOTAL: 108,                   // 成语图鉴分母（主题化目标）
   SEG_BLEND: 40,                      // 段落边界颜色过渡宽度（深度单位）
+  SEG1_FROM: 1500, SEG2_FROM: 3000, SEG3_FROM: 5000, // 画卷四段边界（松涛/幽谷/深潭起点），调参台可改，经 syncSegments 写入 SEGMENTS
 };
 
 /* 画卷四段：云海(晨雾)→松涛(午晴)→幽谷(暮色)→深潭(星蓝)
-   晨雾/暮色取自设计文档原值；午晴/星蓝按同一色彩逻辑设计 */
+   晨雾/暮色取自设计文档原值；午晴/星蓝按同一色彩逻辑设计；
+   边界默认 1500/3000/5000，可经平铺键 SEG*_FROM 在调参台实时调整 */
 CFG.SEGMENTS = [
   {
     name: "云海", sub: "晨雾", from: 0, stars: false,
@@ -40,17 +43,17 @@ CFG.SEGMENTS = [
     mtn: ["#b9c8bf", "#93aba0", "#718f80"],
   },
   {
-    name: "松涛", sub: "午晴", from: 300, stars: false,
+    name: "松涛", sub: "午晴", from: 1500, stars: false,
     sky: ["#fbf3d9", "#f2eed0", "#dcead0"],
     mtn: ["#b3cbb2", "#8cae8e", "#6d9172"],
   },
   {
-    name: "幽谷", sub: "暮色", from: 600, stars: false,
+    name: "幽谷", sub: "暮色", from: 3000, stars: false,
     sky: ["#f6e3c8", "#eccfb4", "#d9b6a4"],
     mtn: ["#c4a48e", "#a3806d", "#7d5f52"],
   },
   {
-    name: "深潭", sub: "星蓝", from: 900, stars: true,
+    name: "深潭", sub: "星蓝", from: 5000, stars: true,
     sky: ["#e9edf3", "#dbe3ec", "#c9d6df"],
     mtn: ["#a9bfcb", "#8aa4b2", "#6c8797"],
   },
@@ -109,7 +112,7 @@ const Utils = {
     return Utils.rgbToHex(Utils.lerp(ca[0], cb[0], t), Utils.lerp(ca[1], cb[1], t), Utils.lerp(ca[2], cb[2], t));
   },
 
-  /** 错字扣血：深度 0 → 1，900丈 → 3；幂 1.6 让初期增长慢、深潭封顶 */
+  /** 错字扣血：深度 0 → 1，封顶深度 → 3；幂 1.6 让初期增长慢、深潭封顶 */
   wrongPenalty(depth) {
     const t = Utils.clamp(depth / CFG.WRONG_DEPTH_FULL, 0, 1);
     return CFG.HP_WRONG_MIN + (CFG.HP_WRONG_MAX - CFG.HP_WRONG_MIN) * Math.pow(t, 1.6);
@@ -122,6 +125,17 @@ const Utils = {
     t = Math.pow(t, Math.max(0.1, CFG.HP_DRAIN_SHAPE));
     const s = t * t * (3 - 2 * t);
     return CFG.HP_DRAIN_MIN + (CFG.HP_DRAIN_MAX - CFG.HP_DRAIN_MIN) * s;
+  },
+
+  /** 段落标志物权重：段内 1，边界前后 SEG_BLEND 内与相邻段交叉渐变（和恒为 1） */
+  segWeight(depth, i) {
+    const segs = CFG.SEGMENTS, B = CFG.SEG_BLEND;
+    if (i < 0 || i >= segs.length) return 0;
+    const from = segs[i].from;
+    const next = segs[i + 1];
+    const wIn = i === 0 ? 1 : Utils.clamp((depth - (from - B)) / B, 0, 1);
+    const wOut = next ? Utils.clamp((next.from - depth) / B, 0, 1) : 1;
+    return Math.min(wIn, wOut);
   },
 
   /** 按深度取画卷段落（含边界颜色渐变过渡） */
@@ -147,6 +161,18 @@ const Utils = {
       }
     }
     return out;
+  },
+
+  /** 把平铺键 SEG1/2/3_FROM 同步进 SEGMENTS（校验递增为正；调参台改动后调用） */
+  syncSegments() {
+    const a = Math.max(1, CFG.SEG1_FROM || 1);
+    const b = Math.max(a + 1, CFG.SEG2_FROM || a + 1);
+    const c = Math.max(b + 1, CFG.SEG3_FROM || b + 1);
+    CFG.SEG1_FROM = a; CFG.SEG2_FROM = b; CFG.SEG3_FROM = c;
+    CFG.SEGMENTS[1].from = a;
+    CFG.SEGMENTS[2].from = b;
+    CFG.SEGMENTS[3].from = c;
+    return c;
   },
 };
 

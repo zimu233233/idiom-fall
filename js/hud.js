@@ -186,9 +186,10 @@ const HUD = {
         nd.classList.toggle("now", i === seg.index);
       });
       const next = CFG.SEGMENTS[seg.index + 1];
+      const cur = CFG.SEGMENTS[seg.index];
       this.set("milenote", next
         ? "深入「" + next.name + "」后，画卷将染" + next.sub + " ✦"
-        : "已至「深潭」，星蓝尽收眼底 ✦");
+        : "已至「" + cur.name + "」，" + (cur.stars ? "星蓝尽收眼底" : cur.sub + "正浓") + " ✦");
     }
 
     // 成语图鉴（本局收录 / 108）

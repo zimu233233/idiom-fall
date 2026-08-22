@@ -34,7 +34,11 @@ const Game = {
   },
 
   stage() {
-    return Math.min(99, 1 + Math.floor(this.depthM() / CFG.STAGE_M));
+    // 难度段 = 按深度累计 + 分区加成（每跨越一个画卷分区额外 +SEG_DIFF_STEP 段，0=关闭梯度）
+    let segIdx = 0;
+    const segs = CFG.SEGMENTS;
+    for (let i = 0; i < segs.length; i++) if (this.depthM() >= segs[i].from) segIdx = i;
+    return Math.min(99, 1 + Math.floor(this.depthM() / CFG.STAGE_M) + segIdx * (CFG.SEG_DIFF_STEP || 0));
   },
 
   depthM() {

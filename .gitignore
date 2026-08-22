@@ -8,4 +8,5 @@ deploy/
 .mimosa/
 .zcode/
 kimi*.html
-游戏截图.png
+游戏截图*.png
+*.mp4

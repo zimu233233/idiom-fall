@@ -2,6 +2,17 @@
 /* 调参台：实时修改 CFG 数值。每项参数附作用说明（含义/单位/默认值/调节影响），
    改动立即写入 CFG 生效（进行中的对局同样生效）；曲线预览随改随绘；
    可保存到本机 localStorage，或导出 JSON 交给开发者固化为默认值。 */
+
+/** 极速到达封顶的深度（按加载时的默认参数与分区加成推算，供「难度段长」说明引用） */
+function termCapDepth() {
+  const capStage = 1 + Math.ceil((CFG.TERM_MAX - CFG.TERM_BASE) / CFG.TERM_PER_STAGE);
+  const segs = CFG.SEGMENTS;
+  const segIdxOf = (d) => { let k = 0; for (let i = 0; i < segs.length; i++) if (d >= segs[i].from) k = i; return k; };
+  let d = 0;
+  while (d < 999999 && 1 + Math.floor(d / CFG.STAGE_M) + segIdxOf(d) * (CFG.SEG_DIFF_STEP || 0) < capStage) d += CFG.STAGE_M;
+  return d;
+}
+
 const Tuning = {
   KEY: "cydl_tune",
   FACTORY: {},      // 出厂值快照（脚本加载时、套用本地覆盖之前记录）
@@ -34,7 +45,7 @@ const Tuning = {
       { k: "HP_MAX", label: "生命上限", unit: "点", desc: "气息条的满值。" },
       { k: "HP_DRAIN_MIN", label: "消耗起始", unit: "点/秒", desc: "最浅处（深度 0）每秒流失的生命，即消耗曲线的起点。" },
       { k: "HP_DRAIN_MAX", label: "消耗封顶", unit: "点/秒", desc: "最深处每秒流失的生命，即消耗曲线的最高值。" },
-      { k: "HP_DRAIN_FULL", label: "消耗封顶深度", unit: "丈", desc: "下坠到该深度时消耗达到最大值，此后恒定不变（900 丈 = 深潭段起点）。" },
+      { k: "HP_DRAIN_FULL", label: "消耗封顶深度", unit: "丈", desc: "下坠到该深度时消耗达到最大值，此后恒定不变（默认 5000 丈，与深潭起点一致）。" },
       { k: "HP_DRAIN_SHAPE", label: "消耗曲线形态", unit: "指数", desc: "1 = 标准 S 形（前缓-中陡-后缓）；调大于 1 前期涨得更慢、陡段后移；调小更早开始爬升。配合上方预览图调整。" },
       { k: "HP_CORRECT", label: "答对回复", unit: "点", desc: "每选对一字恢复的生命。" },
       { k: "HP_STALL", label: "停滞扣血", unit: "点", desc: "浮石自沉一次扣的生命。" },
@@ -58,9 +69,22 @@ const Tuning = {
       { k: "HAMMER_LAYERS", label: "排雷锤层数", unit: "层", desc: "使用「排雷锤」清除下方几层文字层中的错误平台。" },
     ]},
     { name: "难度与词库", items: [
-      { k: "STAGE_M", label: "难度段长", unit: "深度", desc: "每深入多少算一个难度段：影响极速成长、干扰字策略与词库切换。" },
+      { k: "STAGE_M", label: "难度段长", unit: "深度", desc:
+        "每深入多少深度计为一个难度段：段号 = 1 + 深度 ÷ 段长（向下取整）+ 分区加成，段号封顶 99。难度段驱动三件事——" +
+        "① 下落极速：每段在「基础极速」上加「每段极速加量」，但永远不超过「极速封顶」（默认参数下约 " + termCapDepth() + " 丈后即一直是最快下落）；" +
+        "② 干扰字：第 4 段起有概率混入形近/近音干扰字，更难一眼认对；" +
+        "③ 词库：前「常用词段数」段只出 1017 条常用成语，之后启用全量 45410 条。" +
+        "调大 = 难度爬升更缓（同样的深度段数更少），调小 = 更快变难。" },
+      { k: "SEG_DIFF_STEP", label: "分区难度加成", unit: "段/区", desc:
+        "每跨越一个画卷分区（云海→松涛→幽谷→深潭），难度段号额外加几段——跨段的瞬间干扰字、词库与极速同步上一个台阶，形成四区递进的梯度；" +
+        "0 = 关闭分区梯度，难度只按深度匀速爬升。调大 = 每换一段山水难度跳升更猛。" },
       { k: "COMMON_UNTIL_STAGE", label: "常用词段数", unit: "段", desc: "前几个难度段只用 1017 条常用成语，之后进入全量 45410 条词库。" },
       { k: "ALBUM_TOTAL", label: "图鉴分母", unit: "条", desc: "右栏「成语图鉴 x/108」的分母，仅作展示目标。" },
+    ]},
+    { name: "画卷四段（分区边界）", items: [
+      { k: "SEG1_FROM", label: "松涛起点", unit: "丈", desc: "云海段结束、松涛段开始的深度。改后画面色调、旅程里程碑与结算深度评语的分档都会即时跟随。" },
+      { k: "SEG2_FROM", label: "幽谷起点", unit: "丈", desc: "松涛段结束、幽谷段（暮色）开始的深度。需大于松涛起点，否则会自动抬升到合法值。" },
+      { k: "SEG3_FROM", label: "深潭起点", unit: "丈", desc: "幽谷段结束、深潭段（星蓝）开始的深度；分享「深潭」成就与气息/扣血封顶的默认语义都锚定在此。" },
       { k: "SEG_BLEND", label: "段落过渡宽", unit: "深度", desc: "四段山水色调（晨雾/午晴/暮色/星蓝）在边界处渐变过渡的宽度。" },
     ]},
   ],
@@ -126,10 +150,12 @@ const Tuning = {
       const v = src[k];
       if (k in CFG && typeof v === "number" && isFinite(v)) CFG[k] = v;
     });
+    if (Utils.syncSegments) Utils.syncSegments();
   },
 
   applyFactory() {
     this.keys().forEach((k) => { if (k in this.FACTORY) CFG[k] = this.FACTORY[k]; });
+    if (Utils.syncSegments) Utils.syncSegments();
   },
 
   /* ---------- 面板 ---------- */
@@ -241,6 +267,7 @@ const Tuning = {
       if (isFinite(v)) {
         CFG[it.k] = v;
         this.overrides[it.k] = v;
+        if (Utils.syncSegments) Utils.syncSegments();
         this.redrawCurves();
       }
     });
@@ -266,12 +293,12 @@ const Tuning = {
     const c = document.getElementById(id);
     if (!c || !c.getContext) return;
     const ctx = c.getContext();
-    const W = c.width, H = c.height, XMAX = 1200;
+    const W = c.width, H = c.height, XMAX = Math.max(1200, fullDepth);
     ctx.clearRect(0, 0, W, H);
     // 底与边框
     ctx.fillStyle = "#fdfaf2";
     ctx.fillRect(0, 0, W, H);
-    // 900 丈封顶参考线
+    // 封顶深度参考线
     if (fullDepth <= XMAX) {
       const gx = (fullDepth / XMAX) * (W - 8) + 4;
       ctx.strokeStyle = "rgba(58,63,68,0.25)";
@@ -297,7 +324,7 @@ const Tuning = {
     ctx.textAlign = "left";
     ctx.fillText(fn(0).toFixed(2), 6, H - 2);
     ctx.textAlign = "right";
-    ctx.fillText(fn(XMAX).toFixed(2) + " (1200丈)", W - 4, H - 2);
+    ctx.fillText(fn(XMAX).toFixed(2) + " (" + XMAX + "丈)", W - 4, H - 2);
   },
 
   /* ---------- 持久化 ---------- */
