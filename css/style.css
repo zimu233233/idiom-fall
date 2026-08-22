@@ -246,6 +246,13 @@ header.top{display:flex;align-items:center;gap:20px;padding:14px 20px}
 .overlay-box h2{letter-spacing:8px;font-family:'Ma Shan Zheng','KaiTi',serif;font-weight:400;font-size:28px}
 .overlay-tip{color:var(--faint);font-size:12px;margin-bottom:4px}
 
+/* ---- 卷首缘起 ---- */
+.lore-box{padding:28px 26px;max-width:430px;max-height:88vh;overflow-y:auto}
+.lore-text{display:flex;flex-direction:column;gap:9px}
+.lore-text p{color:var(--ink-soft);font-size:14px;line-height:2.05;text-align:center}
+.lore-text .lore-sec{color:var(--faint);font-size:13px}
+.lore-text .lore-sec:first-of-type{margin-top:4px;padding-top:12px;border-top:1px solid #e0d6bd}
+
 /* ---- 结算（题跋） ---- */
 .over-inner{padding:26px 38px;text-align:center;max-width:520px;max-height:92vh;overflow-y:auto}
 .over-best{color:var(--cinnabar);letter-spacing:6px;animation:sealPulse 1.2s infinite;margin-bottom:6px;font-size:13px}

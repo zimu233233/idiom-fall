@@ -73,6 +73,14 @@
     if (window.Tuning) Tuning.init();
 
     // 首次加载门：书法字体等资源全部就绪才放行开局（弱网 8 秒兜底）
+    // 加载句轮换：或备笔墨，或点卷首故事的起笔
+    const LOAD_TIPS = [
+      "展卷中 · 备好笔墨纸砚",
+      "那一夜，书生从梦里跌了出去。",
+      "别急，一个字一个字来。",
+    ];
+    const loadTip = dom("load-tip");
+    if (loadTip) loadTip.textContent = Utils.choice(LOAD_TIPS);
     const LoadGate = window.LoadGate = {
       done: false,
       _queue: [],
@@ -141,8 +149,19 @@
     dom("btn-mute-start").addEventListener("click", () => { SoundFX.toggleMute(); refreshMute(); });
     dom("btn-mute-game").addEventListener("click", () => { SoundFX.toggleMute(); refreshMute(); });
 
+    // 卷首缘起（世界背景）
+    dom("btn-lore").addEventListener("click", () => { SoundFX.play("click"); show("overlay-lore"); });
+    dom("btn-lore-close").addEventListener("click", () => { SoundFX.play("click"); hide("overlay-lore"); });
+
     // 全局按键
     window.addEventListener("keydown", (e) => {
+      // 缘起卡开着时，Esc / Enter 先合上卷首（避免回车穿透开局）
+      const lore = dom("overlay-lore");
+      if (lore && !lore.classList.contains("hidden") &&
+        (e.code === "Escape" || e.code === "Enter")) {
+        hide("overlay-lore");
+        return;
+      }
       if (e.code === "KeyP" || e.code === "Escape") {
         if (GAME.state === "play") GAME.pause();
         else if (GAME.state === "pause") GAME.resume();

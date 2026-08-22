@@ -17,7 +17,7 @@
   <div class="load-box">
     <div class="load-seal"><b><span>成</span><span>语</span><span>下</span><span>落</span></b></div>
     <div class="load-bar"><i></i></div>
-    <p class="load-tip">展卷中 · 备好笔墨纸砚</p>
+    <p class="load-tip" id="load-tip">展卷中 · 备好笔墨纸砚</p>
   </div>
 </div>
 
@@ -32,9 +32,10 @@
     <div class="start-help">
       <p><b>◀ ▶</b>（手机左右滑动）拂袖移动 · 平台上首次按键即起跃</p>
       <p><b>按住不放</b>（手指停在屏幕）撑伞缓降</p>
-      <p>按顺序把成语四个字逐个"盖"进画卷 · 错字如涟漪散去 · 停留过久浮石自沉</p>
+      <p>按顺序把成语四个字逐个"盖"进画卷 · 情急念错，字如涟漪散去 · 停留过久浮石自沉</p>
     </div>
     <button id="btn-mute-start" class="mini-btn">音效：开</button>
+    <button id="btn-lore" class="mini-btn">卷首 · 缘起</button>
     <button id="btn-tune" class="mini-btn hidden">调参台</button>
   </div>
 </div>
@@ -175,6 +176,21 @@
     <p class="overlay-tip">书生悬于半空，画卷静候。</p>
     <button id="btn-resume" class="brush-btn">继续下坠</button>
     <button id="btn-quit" class="brush-btn ghost">收卷返回</button>
+  </div>
+</div>
+
+<!-- ===== 卷首缘起（世界背景） ===== -->
+<div id="overlay-lore" class="overlay hidden">
+  <div class="card overlay-box lore-box">
+    <h2>卷首 · 缘起</h2>
+    <div class="lore-text">
+      <p>书生读破万卷，偏偏口拙——<br>话到急处，字总绊在舌尖，旁人早替他说完了下半句。</p>
+      <p>这一夜他伏案睡去，一脚踏空，<br>从云端坠进一幅青绿长卷。</p>
+      <p>风声愈急，他撑开朱伞，心里只剩一个念头：<br>坠、坠得再急，也要把每个成语，好好说完。</p>
+      <p class="lore-sec">念对一字，字入画卷，攒回一口气息；<br>情急念错，字如涟漪散去。</p>
+      <p class="lore-sec">云海、松涛、幽谷、深潭——坠到气息用尽，卷终梦醒，<br>卷尾的题跋，会替他记下这一梦。</p>
+    </div>
+    <button id="btn-lore-close" class="brush-btn ghost">合上卷首</button>
   </div>
 </div>
 
