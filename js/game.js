@@ -156,6 +156,9 @@ const Game = {
     Effects.update(dt);
     this.cam.depth = this.depthM();
 
+    // 进入最后常用段即预载全量词库（按需加载，休闲玩家不触达则不下载）
+    if (!IdiomDB.full && this.stage() >= CFG.COMMON_UNTIL_STAGE) IdiomDB.ensureFull();
+
     // 学富五车期间银杏叶随行飘落
     if (Scoring.boostT > 0 && Utils.chance(dt * 2.2)) {
       Effects.ginkgo(this.player.x + Utils.rand(-30, 30), this.cam.y + Utils.rand(20, 120), 1);

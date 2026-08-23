@@ -8,6 +8,10 @@ const IdiomDB = {
   charSyl: null,      // 字 -> 拼音音节
   sylChars: null,     // 音节 -> [字]
   recent: [],         // 最近用过的成语，避免短时间重复
+  full: false,        // 全量库（45410 条）是否已挂载
+  _loading: false,
+  _waiters: [],
+  _loader: null,      // 测试注入的加载器（浏览器走 <script> 注入）
 
   // 经典形近字对照（用于高难度干扰）
   LOOKALIKE: {
@@ -41,23 +45,31 @@ const IdiomDB = {
     "徒": ["徙"], "徙": ["徒"],
   },
 
-  init() {
-    const raw = (typeof IDIOM_RAW === "string") ? IDIOM_RAW : "";
-    const lines = raw.split("\n");
-    const all = [];
-    this.byWord = new Map();
-    this.charSyl = new Map();
-    this.sylChars = new Map();
-    const sylSets = new Map();
-    const poolSet = new Set();
+  /** 解析 "词|拼音|释义\n…" 原始串 → 条目数组 */
+  _parseRaw(raw) {
+    const out = [];
+    const lines = String(raw || "").split("\n");
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       if (!line) continue;
       const a = line.indexOf("|"), b = line.indexOf("|", a + 1);
       if (a < 0 || b < 0) continue;
-      const w = line.slice(0, a), p = line.slice(a + 1, b), e = line.slice(b + 1);
-      const entry = [w, p, e];
-      all.push(entry);
+      out.push([line.slice(0, a), line.slice(a + 1, b), line.slice(b + 1)]);
+    }
+    return out;
+  },
+
+  /** 由条目数组重建查询表（首访=常用池；全量到达后整体重建） */
+  _rebuild(entries) {
+    this.all = entries;
+    this.byWord = new Map();
+    this.charSyl = new Map();
+    this.sylChars = new Map();
+    const sylSets = new Map();
+    const poolSet = new Set();
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      const w = entry[0], p = entry[1];
       this.byWord.set(w, entry);
       // 字 -> 音节 映射（拼音为4音节时逐字对应）
       const syls = p.split(/\s+/);
@@ -76,18 +88,68 @@ const IdiomDB = {
       }
     }
     sylSets.forEach((set, syl) => this.sylChars.set(syl, Array.from(set)));
-    this.all = all;
     this.charPool = Array.from(poolSet);
+  },
 
-    this.common = [];
-    if (typeof COMMON_WORDS !== "undefined" && Array.isArray(COMMON_WORDS)) {
+  init() {
+    // 首访只载常用完整记录；全量（IDIOM_RAW）存在则直接挂载（如 Node 测试静态 require）
+    const commonEntries = this._parseRaw((typeof COMMON_RAW === "string") ? COMMON_RAW : "");
+    let fullEntries = [];
+    if (typeof IDIOM_RAW === "string" && IDIOM_RAW) fullEntries = this._parseRaw(IDIOM_RAW);
+    // 兼容旧数据路径：COMMON_WORDS 词表 + 全量库查表
+    if (!commonEntries.length && typeof COMMON_WORDS !== "undefined" && Array.isArray(COMMON_WORDS) && fullEntries.length) {
+      const byW = new Map(fullEntries.map((e) => [e[0], e]));
       for (const w of COMMON_WORDS) {
-        const entry = this.byWord.get(w);
-        if (entry) this.common.push(entry);
+        const e = byW.get(w);
+        if (e) commonEntries.push(e);
       }
     }
-    if (!this.common.length) this.common = all.slice(0, 500);
+    this.common = commonEntries;
+    if (fullEntries.length) {
+      this._rebuild(fullEntries);
+      this.full = true;
+    } else {
+      this._rebuild(this.common);
+      this.full = false;
+    }
+    if (!this.common.length) this.common = this.all.slice(0, 500);
     return this;
+  },
+
+  /** 全量库挂载并重建字表（script 载入后 / 测试直调） */
+  attachFull(raw) {
+    const entries = this._parseRaw(raw);
+    if (!entries.length) return false;
+    this._rebuild(entries);
+    this.full = true;
+    return true;
+  },
+
+  /** 按需加载全量库（file:// 兼容的 <script> 注入）；返回是否已就绪 */
+  ensureFull(cb) {
+    if (this.full) { if (cb) cb(true); return true; }
+    if (cb) this._waiters.push(cb);
+    if (this._loading) return false;
+    this._loading = true;
+    const done = (ok) => {
+      this._loading = false;
+      const ws = this._waiters;
+      this._waiters = [];
+      ws.forEach((f) => { try { f(ok); } catch (e) { } });
+    };
+    const raw = (typeof IDIOM_RAW === "string") ? IDIOM_RAW : "";
+    if (raw) { done(this.attachFull(raw)); return false; }  // 数据已在（静态引入场景）
+    if (this._loader) { this._loader(done); return false; } // 测试注入
+    if (typeof document === "undefined" || !document.createElement) { done(false); return false; }
+    const s = document.createElement("script");
+    s.src = "js/data/idioms.js";
+    s.onload = () => {
+      const r = (typeof IDIOM_RAW === "string") ? IDIOM_RAW : "";
+      done(this.attachFull(r));
+    };
+    s.onerror = () => done(false);
+    document.body.appendChild(s);
+    return false;
   },
 
   /** 按难度阶段抽取成语：低阶段用常用表，高阶段用全量表 */
@@ -100,7 +162,11 @@ const IdiomDB = {
         return { w: e[0], p: e[1], e: e[2], common: true };
       }
     }
-    const useCommon = stage <= CFG.COMMON_UNTIL_STAGE && this.common.length > 50;
+    let useCommon = stage <= CFG.COMMON_UNTIL_STAGE && this.common.length > 50;
+    if (!useCommon && !this.full) {
+      this.ensureFull();   // 触发按需加载，未就绪期间暂用常用池（不空转）
+      useCommon = true;
+    }
     const pool = useCommon ? this.common : this.all;
     for (let tries = 0; tries < 24; tries++) {
       const entry = Utils.choice(pool);

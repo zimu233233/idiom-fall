@@ -54,7 +54,10 @@
     // ?autostart=1 自动开局；?demo=play|wrong|idle 演示自动驾驶（自动化验收用）
     const params = new URLSearchParams(location.search);
     const q = params.get("q");
-    if (q && q.length === 4) GAME.forcedIdiom = q;
+    if (q && q.length === 4) {
+      GAME.forcedIdiom = q;
+      IdiomDB.ensureFull();  // 强制词可能只在全量库，立即按需加载
+    }
     const demoMode = params.get("demo");
     if (demoMode === "play" || demoMode === "wrong" || demoMode === "idle") {
       GAME.demoMode = demoMode;
@@ -108,6 +111,17 @@
       } catch (e) { setTimeout(fin, 0); }
       window.addEventListener("load", fin); // 其余资源兜底
       setTimeout(fin, 8000);                // 弱网兜底：最多等 8 秒
+      // 开局就绪后后台预热全量书法字体（预热字来自 build 生成的 js/data/font-warm.js，属 B−A 生僻字，
+      // 触发第二条 @font-face 的 unicode-range 分支下载全量子集）
+      LoadGate.whenReady(() => {
+        setTimeout(() => {
+          try {
+            if (document.fonts && document.fonts.load && window.FONT_WARM_CHAR) {
+              document.fonts.load("1em 'Ma Shan Zheng'", window.FONT_WARM_CHAR);
+            }
+          } catch (e) { }
+        }, 2500);
+      });
     })();
     const canvas = dom("game-canvas");
     GAME.init(canvas);

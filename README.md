@@ -93,17 +93,32 @@
 ```
 index.html          入口（双击打开）
 css/style.css       青绿手卷样式（桌面三栏 980px / 手机三段式 + 抽屉）
-css/fonts/          Ma Shan Zheng 书法字体（woff2 本地加载，离线可用）
+css/fonts.css       两段式 @font-face（生成物：首段子集 + 全量子集 unicode-range）
+css/fonts/          Ma Shan Zheng 字体子集：msz-a.woff2（首访）/ msz-full.woff2（后台全量）
 js/                 游戏脚本（传统 <script> 加载，file:// 可用）
-  data/idioms.js    全量词库（45,410 条四字成语：字|拼音|释义）—— 生成物，勿手改
-  data/common.js    常用成语表（1,017 条，前期关卡用）—— 生成物，勿手改
+  data/common-raw.js 常用词库完整记录（1,017 条，首访必载）—— 生成物，勿手改
+  data/idioms.js     全量词库（45,410 条，按需 <script> 注入加载）—— 生成物，勿手改
+  data/font-warm.js  全量字体后台预热字（生成物，勿手改）
   utils.js idioms.js input.js audio.js effects.js camera.js
   player.js platforms.js items.js scoring.js tuning.js hud.js qr.js
   game.js settlement.js main.js
-build_idioms.py     词库预处理：从 全_output_拼音_解释.csv 重新生成上面两份数据
-test/run-tests.js   无头验收测试（M0-M8 全量断言 + QR 往返校验，113 项）
+build_idioms.py     词库预处理：从 全_output_拼音_解释.csv 生成上面两份词库
+tools/make_fontsets.py 字体子集构建：扫描用字 → 字符集/unicode-range/预热字 + 配合 pyftsubset 切子集
+test/run-tests.js   无头验收测试（M0-M8 全量断言 + QR 往返校验，119 项）
 test/drawer-check.js 手机抽屉交互无头验证（14 项）
 ```
+
+## 性能 · 首访瘦身
+
+| 项 | 优化前 | 优化后 |
+| --- | --- | --- |
+| 书法字体 | 2.71 MB 全量必载 | 首段 **0.87 MB**（常用成语+全部文案字）；全量 2.07 MB 经 unicode-range 后台预热 |
+| 词库 | 4.57 MB 全量必载 | 首访仅 **116 KB**（常用 1,017 条，gzip 后约 35 KB） |
+| 首访合计 | ≈ 7.3 MB | ≈ **1.0 MB**（不含页面本体） |
+
+- **字体两段式**：首段子集覆盖常用成语与全部界面/评语/分享文案字；渲染到段外生僻字时浏览器按 unicode-range 自动取全量子集（到达前短暂回落系统楷体），开局后 2.5 秒起后台预热全量
+- **词库按需加载**：难度进入最后常用段时自动注入 `<script>` 拉取全量库（file:// 兼容）；加载期间继续用常用池出题，不空转；休闲玩家不触达则永不下载
+- `?q=指定成语` 会立即触发全量库加载（强制词可能只在全量库中）
 
 ## 开发
 
@@ -111,7 +126,12 @@ test/drawer-check.js 手机抽屉交互无头验证（14 项）
 # 重新生成词库（修改 CSV 或常用表后执行）
 python build_idioms.py
 
-# 运行验收测试（113 项断言）+ 抽屉交互验证（14 项）
+# 重新切字体子集（改动文案字集后执行；需 pip install fonttools brotli）
+python tools/make_fontsets.py
+pyftsubset <原字体> --text-file=build/fontchars/chars-a.txt --output-file=css/fonts/msz-a.woff2 --flavor=woff2 --no-hinting --desubroutinize
+pyftsubset <原字体> --text-file=build/fontchars/chars-b.txt --output-file=css/fonts/msz-full.woff2 --flavor=woff2 --no-hinting --desubroutinize
+
+# 运行验收测试（119 项断言）+ 抽屉交互验证（14 项）
 node test/run-tests.js
 node test/drawer-check.js
 ```

@@ -1,9 +1,5 @@
 /* ===== 成语下落 · 青绿手卷（矿物颜料 × 宣纸） ===== */
-@font-face {
-  font-family: 'Ma Shan Zheng';
-  src: url('fonts/ma-shan-zheng.woff2') format('woff2');
-  font-weight: 400; font-display: swap;
-}
+/* 书法字体两段子集在 build 生成的 css/fonts.css（首段 + 全量 unicode-range） */
 
 :root{
   --paper:#f6f1e5; --paper2:#f1ead9; --card:#fdfaf2;
