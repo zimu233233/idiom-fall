@@ -63,6 +63,7 @@ const Game = {
     Scoring.reset();
     Items.reset();
     Effects.reset();
+    if (window.Rush) Rush.reset();
     this.cam.reset();
     this.cam.depth = 0;
     Input.reset();
@@ -86,6 +87,11 @@ const Game = {
   useItem(kind) {
     // 游戏进行中、或"抽屉冻结"期间可用道具（多宝阁就在抽屉里）；手动暂停/结算不可用
     if (this.state !== "play" && this._drawerPause !== true) return;
+    // 直通中双栏二选一：排雷锤/减速表会破坏节奏语义，禁用（生命树叶可用）
+    if (Rush.active && (kind === "hammer" || kind === "clock")) {
+      this.toast("文思直通中 · 此物暂不可用");
+      return;
+    }
     Items.use(kind, this);
   },
 
@@ -145,11 +151,25 @@ const Game = {
 
     if (this.demoMode) this.demoControl();
     Input.poll();
-    this.player.update(dt, this);
-    // 通关庆祝加速期间不做"错过"判定（正常下落追上前方层即可）
-    if (this.celebrateT <= 0) this.world.recoverMissed(this.player.y);
-    // 生成窗口同时覆盖相机与玩家下方（快速下落时不脱层）
-    this.world.generateAhead(Math.max(this.cam.y + CFG.H * 1.7, this.player.y + CFG.H * 0.8));
+    if (Rush.active) {
+      // 文思直通：Rush 驱动节奏，仅在坠落/反弹阶段放开主角物理
+      if (Rush.update(dt, this)) this.player.update(dt, this);
+    } else {
+      this.player.update(dt, this);
+      if (Rush.active) {
+        // 本帧内 onCorrect 刚触发了直通：跳过常规错过判定与层生成，
+        // 否则触发帧的 generateAhead 会立即从 nextY 重建整屏备选字/无字平台
+      } else {
+        // 通关庆祝加速期间不做"错过"判定（正常下落追上前方层即可）
+        if (this.celebrateT <= 0) this.world.recoverMissed(this.player.y);
+        // 生成窗口同时覆盖相机与玩家下方（快速下落时不脱层）
+        this.world.generateAhead(Math.max(this.cam.y + CFG.H * 1.7, this.player.y + CFG.H * 0.8));
+        // 停滞判定：同一平台停留超过3秒
+        if (this.player.grounded && this.player.standT >= CFG.STALL_TIME) {
+          this.onStall();
+        }
+      }
+    }
     this.world.update(dt);
     this.world.prune(this.cam.y);
     Items.update(dt, this.player, this);
@@ -164,18 +184,20 @@ const Game = {
       Effects.ginkgo(this.player.x + Utils.rand(-30, 30), this.cam.y + Utils.rand(20, 120), 1);
     }
 
-    // 停滞判定：同一平台停留超过3秒
-    if (this.player.grounded && this.player.standT >= CFG.STALL_TIME) {
-      this.onStall();
+    // 生命随时间/深度消耗（揭示阶段不耗；直通中所有扣除按 RUSH_HP_MULT 减半）
+    if (!(Rush.active && Rush.phase === "reveal")) {
+      let rate = this.hpDrainRate();
+      if (Rush.active) rate *= CFG.RUSH_HP_MULT;
+      Scoring.drain(dt, rate);
     }
-
-    // 生命随时间/深度消耗
-    Scoring.drain(dt, this.hpDrainRate());
     Scoring.maxDepthM = Math.max(Scoring.maxDepthM, this.depthM());
     if (Scoring.hp <= 0) {
       Scoring.hp = 0;
-      this.endRun();
-      return;
+      if (Rush.active) Rush.deferredDeath = true;  // 直通走完再结算
+      else {
+        this.endRun();
+        return;
+      }
     }
 
     this.cam.follow(this.player.y, dt);
@@ -184,6 +206,7 @@ const Game = {
 
   onLand(plat) {
     plat.bounceT = 1;
+    if (Rush.active) { Rush.onLand(plat, this); return; }
     if (plat.isChoice && !plat.consumed && plat.breaking <= 0) {
       const expect = this.world.idiom.w[this.world.progress];
       if (plat.char === expect) this.onCorrect(plat);
@@ -207,6 +230,8 @@ const Game = {
     this.world.progress++;
     HUD.setIdiom(this.world.idiom, this.world.progress);
     if (this.world.progress >= 4) this.onIdiomComplete();
+    // 墨池蓄满（通关那一字也算）→ 文思直通
+    if (Rush.addCorrect()) Rush.start(this);
   },
 
   onIdiomComplete() {
@@ -232,6 +257,7 @@ const Game = {
   },
 
   onWrong(plat) {
+    Rush.addWrong();   // 墨池扣减（下限 0）
     const pen = Utils.wrongPenalty(this.depthM());
     Scoring.onWrong(pen);
     this.world.perfect = false;
@@ -339,6 +365,8 @@ const Game = {
     }
     this.player.draw(ctx, cam, this.time);
     Effects.draw(ctx, cam);
+    // 文思直通：揭示薄纱/竖排大字 或 进行中淡金氛围
+    if (window.Rush) Rush.drawVeil(ctx);
     // 低生命：极淡朱砂脉动提示（克制的呼吸感）
     if (this.state === "play" && Scoring.hp < 25) {
       const pulse = 0.5 + 0.5 * Math.sin(this.time * 4);

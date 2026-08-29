@@ -62,6 +62,12 @@ class Player {
     this.alive = true;
   }
 
+  /** 落地/站稳共用同一水平容差——两处不一致会在平台边缘形成
+      "落地→下一帧判脱足→再落地"的死循环（表现即人物抖动） */
+  onPlat(p) {
+    return !!p && !p.dead && p.breaking <= 0 && Math.abs(this.x - p.x) <= p.w / 2 + 6;
+  }
+
   bounceUp(v) {
     this.vy = -v;
     this.grounded = false;
@@ -126,7 +132,7 @@ class Player {
       if (plat) {
         this.y = plat.y;
         this.vy = 0;
-        this.vx *= 0.4;
+        this.vx = 0; // 落足即止：残余横速会把边缘站立者推出支撑环，诱发抖动循环
         this.grounded = true;
         this.ground = plat;
         this.standT = 0;
@@ -135,7 +141,7 @@ class Player {
       }
     } else {
       const p = this.ground;
-      if (!p || p.dead || p.breaking > 0 || Math.abs(this.x - p.x) > p.w / 2 + 4) {
+      if (!this.onPlat(p)) {
         this.grounded = false;
         this.ground = null;
       } else {
@@ -152,7 +158,9 @@ class Player {
   draw(ctx, cam, time) {
     const sy = this.y - cam.y;
     const gliding = !this.grounded && this.vy > -50 && (Input.glide);
-    const spr = (gliding || this.grounded) ? ScholarSprite.open : ScholarSprite.closed;
+    // 直通揭示期间悬停——撑伞姿态（坠落阶段走常规下坠姿态）
+    const hover = (typeof Rush !== "undefined") && Rush.active && Rush.phase === "reveal";
+    const spr = (gliding || this.grounded || hover) ? ScholarSprite.open : ScholarSprite.closed;
     if (!spr.complete || !spr.naturalWidth) return;
 
     let scaleX = 1, scaleY = 1;

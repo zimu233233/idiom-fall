@@ -86,8 +86,22 @@ h3::before{content:'';width:7px;height:7px;background:var(--gold);
   font-size:46px;letter-spacing:8px;color:var(--ink)}
 .game-sub{color:var(--faint);letter-spacing:4px;font-size:13px;margin:8px 0 14px}
 .start-best{color:var(--ochre);min-height:20px;margin-bottom:14px;letter-spacing:2px;font-size:13px}
-.start-help{margin:20px 0 16px;color:var(--ink-soft);font-size:13px;line-height:2;text-align:left}
+.start-help{margin:20px 0 12px;color:var(--ink-soft);font-size:13px;line-height:2;text-align:left}
 .start-help b{color:var(--mineral-dk)}
+
+/* ---- 作者引流（开始页） ---- */
+.author-row{display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;margin:2px 0 14px}
+.author-label{font-size:12px;color:var(--ink-soft);letter-spacing:2px}
+.author-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;font-size:13px;
+  color:var(--ink);text-decoration:none;border:1px solid var(--line);border-radius:999px;
+  background:rgba(253,250,242,.92);box-shadow:0 2px 0 #e0d6bd;font-family:inherit;cursor:pointer}
+.author-btn:hover{border-color:var(--gold);color:#9c7a35}
+.author-btn b{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:5px;
+  color:#fdfaf2;font-size:11px;font-weight:600}
+.author-btn.bili{border-color:#eec3cc}
+.author-btn.bili b{background:#fb7299}
+.author-btn.douyin{border-color:#cdd6df}
+.author-btn.douyin b{background:#2f3033}
 
 /* ---- 游戏框架 ---- */
 #screen-game{overflow:auto}
@@ -144,6 +158,26 @@ header.top{display:flex;align-items:center;gap:20px;padding:14px 20px}
   border:1px solid var(--azurite);color:var(--azurite);border-radius:999px;
   display:inline-block;background:rgba(255,255,255,.55)}
 .state-pill.slow{border-color:var(--azurite);color:var(--azurite)}
+.state-pill.rush{border-color:var(--gold);color:#9c7a35;animation:rushPulse 1.2s ease-in-out infinite}
+@keyframes rushPulse{0%,100%{box-shadow:0 0 0 0 rgba(194,161,99,.35)}50%{box-shadow:0 0 0 5px rgba(194,161,99,.14)}}
+
+/* 墨池（直通能量槽） */
+.energy{margin:8px 0 2px}
+.energy .e-label{display:flex;justify-content:space-between;margin-bottom:3px}
+.energy-bar{position:relative;height:10px;border:1px solid var(--line);border-radius:999px;
+  background:rgba(255,255,255,.55);overflow:hidden}
+#energy-fill{height:100%;width:0;border-radius:999px;
+  background:linear-gradient(90deg,#7ba889,#c2a163);transition:width .25s ease}
+.energy-bar::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:999px;
+  background:repeating-linear-gradient(90deg,transparent 0,transparent calc(100%/16 - 1px),
+    rgba(58,63,68,.18) calc(100%/16 - 1px),rgba(58,63,68,.18) calc(100%/16))}
+.energy.full #energy-fill{animation:inkFull 1.1s ease-in-out infinite}
+.energy.full .e-label .mini:last-child{color:#9c7a35;font-weight:600}
+@keyframes inkFull{0%,100%{box-shadow:0 0 0 0 rgba(194,161,99,.4)}
+  50%{box-shadow:0 0 0 6px rgba(194,161,99,.18)}}
+.m-energy{height:4px;background:rgba(255,255,255,.6);border:1px solid var(--line);
+  border-radius:999px;overflow:hidden;margin-bottom:4px}
+#m-energy-fill{height:100%;width:0;background:linear-gradient(90deg,#7ba889,#c2a163);border-radius:999px}
 
 /* 左栏 */
 .hp{height:12px;border-radius:999px;background:#ece4cd;overflow:hidden;

@@ -35,6 +35,12 @@
       <p><b>按住不放</b>（手指停在屏幕）撑伞缓降</p>
       <p>按顺序把成语四个字逐个"盖"进画卷 · 情急念错，字如涟漪散去 · 停留过久浮石自沉</p>
     </div>
+    <!-- 作者引流：B站已开通；抖音账号拿到主页链接后填入 href 并删掉 hidden 类即可显示 -->
+    <div class="author-row">
+      <span class="author-label">关注作者</span>
+      <a id="author-bili" class="author-btn bili" href="https://space.bilibili.com/7621320" target="_blank" rel="noopener noreferrer"><b>B</b>哔哩哔哩 · 追更</a>
+      <a id="author-douyin" class="author-btn douyin hidden" href="#" target="_blank" rel="noopener noreferrer"><b>抖</b>抖音 · 追更</a>
+    </div>
     <button id="btn-mute-start" class="mini-btn">音效：开</button>
     <button id="btn-lore" class="mini-btn">卷首 · 缘起</button>
     <button id="btn-tune" class="mini-btn hidden">调参台</button>
@@ -63,6 +69,7 @@
         <div id="boost-pill" class="boost-seal hidden"><b><span>学</span><span>富</span><span>五</span><span>车</span></b></div>
         <small id="boost-pill-t" class="boost-t hidden">收益 ×2</small>
         <div id="slow-pill" class="state-pill slow hidden">减速中</div>
+        <div id="rush-pill" class="state-pill rush hidden">文思直通</div>
       </div>
     </header>
 
@@ -73,6 +80,10 @@
         <div class="hp"><div id="hp-fill"></div></div>
         <div class="r mini-row"><span class="mini"><span id="hp-num">100</span> / 100</span>
           <span class="mini" style="color:var(--mineral-dk)">每字 +0.5</span></div>
+        <div class="energy" id="energy-wrap">
+          <div class="e-label"><span class="mini">墨池</span><span class="mini" id="energy-num">0/16</span></div>
+          <div class="energy-bar"><div id="energy-fill"></div></div>
+        </div>
         <h3>战绩</h3>
         <div class="r score"><span>分数</span><b id="stat-score">0</b></div>
         <div class="r"><span>连击</span>
@@ -106,6 +117,7 @@
           <div id="hud-mobile">
             <div class="m-top">
               <div class="m-hp"><div id="m-hp-fill"></div></div>
+              <div class="m-energy"><div id="m-energy-fill"></div></div>
               <div class="m-stats">
                 <span id="m-score">0</span>
                 <span id="m-combo">×1.00</span>
@@ -236,6 +248,7 @@
 <script src="js/player.js"></script>
 <script src="js/platforms.js"></script>
 <script src="js/items.js"></script>
+<script src="js/rush.js"></script>
 <script src="js/scoring.js"></script>
 <script src="js/tuning.js"></script>
 <script src="js/hud.js"></script>

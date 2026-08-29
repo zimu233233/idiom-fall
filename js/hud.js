@@ -10,6 +10,7 @@ const HUD = {
       "idiom-slots", "idiom-pinyin", "idiom-expl",
       "stat-score", "stat-combo", "stat-mult", "stat-depth", "stat-idioms", "stat-coins",
       "hp-fill", "hp-num",
+      "energy-wrap", "energy-fill", "energy-num", "m-energy-fill", "rush-pill",
       "inv-clock", "inv-hammer", "inv-leaf", "inv-clock-row", "inv-hammer-row", "inv-leaf-row",
       "history-list", "boost-pill", "boost-pill-t", "slow-pill",
       "m-hp-fill", "m-score", "m-combo", "m-depth", "m-idioms",
@@ -150,6 +151,20 @@ const HUD = {
     const mfill = this.els["m-hp-fill"];
     if (mfill) { mfill.style.width = (pct * 100).toFixed(1) + "%"; mfill.style.background = color; }
     this.set("hp-num", Math.ceil(Math.max(0, S.hp)));
+
+    // 墨池（文思直通能量槽）：直通中按剩余能量显示
+    const R = (typeof Rush !== "undefined") ? Rush : { energy: 0, active: false };
+    const epct = Utils.clamp(R.energy / CFG.RUSH_NEED, 0, 1) * 100;
+    const efill = this.els["energy-fill"];
+    if (efill) efill.style.width = epct.toFixed(1) + "%";
+    const mefill = this.els["m-energy-fill"];
+    if (mefill) mefill.style.width = epct.toFixed(1) + "%";
+    const ewrap = this.els["energy-wrap"];
+    if (ewrap) ewrap.classList.toggle("full", R.energy >= CFG.RUSH_NEED);
+    this.set("energy-num", R.energy % 1 === 0 ? (R.energy + "/" + CFG.RUSH_NEED)
+      : (R.energy.toFixed(1) + "/" + CFG.RUSH_NEED));
+    const rp = this.els["rush-pill"];
+    if (rp) rp.classList.toggle("hidden", !R.active);
 
     // 连击珠 + 倍率绶带
     const beads = this.els["combo-beads"];

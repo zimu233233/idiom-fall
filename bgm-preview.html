@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>背景音乐试听 · 成语下落游戏</title>
+<style>
+  :root{
+    --paper:#f6f1e5; --paper2:#f1ead9; --card:#fdfaf2; --line:#e5ddc8;
+    --ink:#3a3f44; --ink-soft:#6b7076; --faint:#a9a294;
+    --azurite:#4a7a8c; --mineral:#6f9e7f; --mineral-dk:#55826a;
+    --ochre:#b9905f; --cinnabar:#c0574b; --gold:#c2a163;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    background:
+      radial-gradient(1200px 500px at 50% -100px, rgba(111,158,127,.12), transparent 60%),
+      radial-gradient(900px 400px at 90% 110%, rgba(74,122,140,.10), transparent 60%),
+      var(--paper);
+    color:var(--ink);
+    font-family:"Ma Shan Zheng","STKaiti","KaiTi","楷体",serif;
+    min-height:100vh;
+    padding:40px 16px 80px;
+  }
+  .grain{
+    position:fixed; inset:0; pointer-events:none; opacity:.05; z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .wrap{ position:relative; z-index:1; max-width:860px; margin:0 auto; }
+  header{ display:flex; align-items:flex-start; gap:18px; margin-bottom:10px; }
+  .seal{
+    width:56px; height:56px; flex:0 0 auto;
+    background:var(--cinnabar); color:#fdf8ee;
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px; line-height:1.1; text-align:center;
+    border-radius:8px; transform:rotate(-4deg);
+    box-shadow:inset 0 0 0 2.5px #fdf8ee55, 2px 3px 0 rgba(58,63,68,.15);
+    writing-mode:vertical-rl;
+  }
+  h1{ font-size:34px; letter-spacing:6px; font-weight:normal; }
+  h1 small{ display:block; font-size:14px; color:var(--ink-soft); letter-spacing:2px; margin-top:6px; }
+  .note{
+    margin:14px 0 30px; padding:12px 16px; border:1px dashed var(--ochre);
+    border-radius:8px; color:var(--ink-soft); font-size:15px; line-height:1.7;
+    background:rgba(253,250,242,.65);
+  }
+  .note b{ color:var(--mineral-dk); }
+  h2{
+    font-size:20px; letter-spacing:3px; color:var(--mineral-dk); font-weight:normal;
+    margin:34px 0 12px; display:flex; align-items:center; gap:10px;
+  }
+  h2::before{ content:""; width:10px; height:10px; background:var(--mineral); transform:rotate(45deg); flex:0 0 auto; }
+  h2 small{ color:var(--faint); font-size:13px; letter-spacing:1px; }
+  .track{
+    display:flex; align-items:center; gap:14px;
+    background:var(--card); border:1px solid var(--line); border-left:4px solid var(--line);
+    border-radius:8px; padding:13px 16px; margin-bottom:10px;
+    transition:border-color .15s, box-shadow .15s, transform .15s;
+    cursor:pointer;
+  }
+  .track:hover{ border-left-color:var(--gold); box-shadow:0 2px 8px rgba(58,63,68,.07); }
+  .track.on{ border-left-color:var(--cinnabar); box-shadow:0 3px 10px rgba(192,87,75,.12); }
+  .playbtn{
+    width:42px; height:42px; flex:0 0 auto; border-radius:50%;
+    border:1.5px solid var(--ink-soft); background:transparent; cursor:pointer;
+    font-size:17px; color:var(--ink-soft); line-height:1;
+    transition:all .15s;
+  }
+  .track.on .playbtn{ background:var(--cinnabar); border-color:var(--cinnabar); color:#fdf8ee; }
+  .meta{ flex:1 1 auto; min-width:0; }
+  .meta .nm{ font-size:19px; letter-spacing:2px; }
+  .meta .nm .no{ color:var(--gold); margin-right:8px; font-size:16px; }
+  .meta .ds{ font-size:13.5px; color:var(--ink-soft); margin-top:3px; letter-spacing:.5px; }
+  .tags{ flex:0 0 auto; text-align:right; font-size:12px; color:var(--faint); line-height:1.8; }
+  .tags .pill{
+    display:inline-block; border:1px solid var(--line); border-radius:99px;
+    padding:1px 9px; margin-left:5px; color:var(--ink-soft); background:rgba(241,234,217,.6);
+  }
+  .seam{
+    flex:0 0 auto; border:1px solid var(--line); border-radius:6px;
+    background:rgba(241,234,217,.7); color:var(--ink-soft);
+    font-family:inherit; font-size:12.5px; padding:5px 10px; cursor:pointer; letter-spacing:1px;
+  }
+  .seam:hover{ border-color:var(--azurite); color:var(--azurite); }
+  .bar{
+    position:sticky; bottom:14px; z-index:5; max-width:860px; margin:26px auto 0;
+    display:flex; align-items:center; gap:14px;
+    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:12px 18px; box-shadow:0 4px 16px rgba(58,63,68,.12);
+  }
+  .bar .now{ flex:1 1 auto; min-width:0; font-size:15px; letter-spacing:1px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; color:var(--ink-soft); }
+  .bar .now b{ color:var(--ink); }
+  .bar label{ display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--ink-soft); cursor:pointer; white-space:nowrap; }
+  .bar input[type=range]{ accent-color:var(--mineral-dk); width:110px; }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="wrap">
+  <header>
+    <div class="seal">乐府</div>
+    <h1>背景音乐试听
+      <small>成语下落游戏 · 青绿手卷配乐小样 · 十二首 · 程序合成 · 无版权素材</small>
+    </h1>
+  </header>
+  <div class="note">
+    本页为<b>选曲试听页</b>，尚未接入游戏本体。全部曲目以中国传统五声音阶程序合成，
+    音色力求「神似」古琴、箫、筝、二胡与编钟；每首<b>首尾无缝循环</b>。
+    「接缝」按钮会跳到结尾前 4 秒，帮你验收循环衔接。
+    点行即播，右下角可控制循环与音量。曲毕选定后，再择优接入游戏并精简体积。
+  </div>
+  <main id="list"></main>
+</div>
+
+<div class="bar">
+  <button class="playbtn" id="bigPlay" title="播放/暂停">▶</button>
+  <div class="now" id="nowPlaying">未在播放 —— 从上面挑一首开始展卷吧</div>
+  <label><input type="checkbox" id="loopChk" checked> 循环</label>
+  <input type="range" id="vol" min="0" max="100" value="72" aria-label="音量">
+</div>
+
+<audio id="player" preload="auto"></audio>
+
+<script>
+'use strict';
+/* 曲单（与 tools/bgm/compositions.js 及 audio/bgm/manifest.json 保持一致） */
+var TRACKS = [
+  { id:'01', slug:'opening-scroll', name:'展卷·梦入青山', group:'卷首', scene:'卷首加载', desc:'古琴与箫一问一答，梦的第一口气。', tags:['古琴+箫','极简留白'], sec:102 },
+  { id:'02', slug:'cloud-sea',      name:'云海泛墨',       group:'第一段·云海', scene:'晨雾', desc:'箫声浮在弦底之上，像墨在水面化开。', tags:['箫主导','悠远空灵'], sec:107 },
+  { id:'03', slug:'pine-noon',      name:'松间清昼',       group:'第二段·松涛', scene:'午晴', desc:'筝珠滚过松针，晌午的风把光摇碎。', tags:['古筝琶音','明快清朗'], sec:102 },
+  { id:'04', slug:'tipsy-steps',    name:'微醺行步',       group:'全卷通用', scene:'答题行进', desc:'借《酒狂》跛行的三拍醉意，一步一顿地走路。', tags:['三拍摇摆','公有领域律动'], sec:86 },
+  { id:'05', slug:'valley-spring',  name:'幽谷闻泉',       group:'第三段·幽谷', scene:'暮色', desc:'泛音是溅起的泉花，水声一直走在深处。', tags:['琴泛音+水声','清凉'], sec:108 },
+  { id:'06', slug:'geese-at-dusk',  name:'暮色归雁',       group:'第三段·幽谷', scene:'幽谷深处', desc:'雁阵一行行落下，二胡替它们喊出余音。', tags:['二胡长弓','平沙落雁意象'], sec:106 },
+  { id:'07', slug:'stars-deep-pool',name:'星垂深潭',       group:'第四段·深潭', scene:'星蓝夜潭', desc:'低音沉在潭底，磬声是偶尔眨眼的星。', tags:['磬点低吟','深邃'], sec:104 },
+  { id:'08', slug:'rain-notes',     name:'细雨题笺',       group:'全卷通用', scene:'连击愉悦', desc:'雨点打在笺纸上，写对一笔就亮一下。', tags:['俏皮短句','轻松可爱'], sec:100 },
+  { id:'09', slug:'snow-empty-mountain', name:'空山新雪',  group:'全卷通用', scene:'结算气质', desc:'一场慢板的独白，冷，但干净。', tags:['古琴独奏','清冷通透'], sec:109 },
+  { id:'10', slug:'long-river-of-scrolls', name:'千卷长河', group:'全卷通用', scene:'主题收束', desc:'云海、松风、人声、钟鸣汇成一条长河。', tags:['多动机交织','层次最丰'], sec:107 },
+  { id:'11', slug:'golden-hall-bloom',     name:'金殿醉花阴', group:'编钟两曲', scene:'编钟其一·华美宴舞', desc:'金石铿锵，丝竹缠绵，殿上灯影流转如醉。', tags:['编钟主奏','华美浓郁'], sec:88 },
+  { id:'12', slug:'night-banquet-labyrinth', name:'夜宴迷楼', group:'编钟两曲', scene:'编钟其二·幽艳幻境', desc:'钟声在回廊里拐了几个弯才到你耳边，半音里藏着醉意。', tags:['编钟幽鸣','幽艳暧昧'], sec:94 }
+];
+
+var GROUP_ORDER = ['卷首', '第一段·云海', '第二段·松涛', '第三段·幽谷', '第四段·深潭', '编钟两曲'];
+/* 全卷通用排在旅程组之后、编钟之前 */
+function groupsOf() {
+  var map = {};
+  TRACKS.forEach(function (t) { (map[t.group] = map[t.group] || []).push(t); });
+  var order = [];
+  GROUP_ORDER.slice(0, 5).forEach(function (g) { if (map[g]) { order.push([g, map[g]]); delete map[g]; } });
+  if (map['全卷通用']) order.push(['全卷通用', map['全卷通用']]);
+  GROUP_ORDER.slice(5).forEach(function (g) { if (map[g]) order.push([g, map[g]]); });
+  Object.keys(map).forEach(function (g) { order.push([g, map[g]]); });
+  return order;
+}
+
+(function build() {
+  var list = document.getElementById('list');
+  var frag = document.createDocumentFragment();
+  groupsOf().forEach(function (pair) {
+    var h = document.createElement('h2');
+    h.innerHTML = pair[0] + ' <small>' + pair[1].length + ' 首</small>';
+    frag.appendChild(h);
+    pair[1].forEach(function (t) {
+      var row = document.createElement('div');
+      row.className = 'track';
+      row.dataset.slug = t.slug;
+      row.innerHTML =
+        '<button class="playbtn" data-act="play" title="播放/暂停">▶</button>' +
+        '<div class="meta"><div class="nm"><span class="no">' + t.id + '</span>' + t.name + '</div>' +
+        '<div class="ds">' + t.desc + ' · ' + t.scene + '</div></div>' +
+        '<button class="seam" data-act="seam" title="跳到结尾前4秒验证无缝循环">接缝</button>' +
+        '<div class="tags"><span class="pill">' + t.sec + 's</span><br>' +
+        t.tags.map(function (x) { return '<span class="pill">' + x + '</span>'; }).join('') + '</div>';
+      frag.appendChild(row);
+    });
+  });
+  list.appendChild(frag);
+})();
+
+var player = document.getElementById('player');
+var curSlug = null;
+
+function rows() { return document.querySelectorAll('.track'); }
+
+function playTrack(slug, seamSeek) {
+  var t = TRACKS.filter(function (x) { return x.slug === slug; })[0];
+  if (!t) return;
+  if (curSlug !== slug) {
+    player.src = 'audio/bgm/' + t.id + '-' + t.slug + '.mp3';
+    player.loop = document.getElementById('loopChk').checked;
+    player.play();
+    curSlug = slug;
+  } else if (seamSeek && player.duration) {
+    player.currentTime = Math.max(0, player.duration - 4);
+  } else if (player.paused) {
+    player.play();
+  } else {
+    player.pause();
+  }
+  syncUI();
+}
+
+function syncUI(paused) {
+  rows().forEach(function (r) {
+    var mine = r.dataset.slug === curSlug;
+    r.classList.toggle('on', mine);
+    var b = r.querySelector('[data-act="play"]');
+    b.textContent = (mine && !paused) ? '⏸' : '▶';
+  });
+  document.getElementById('bigPlay').textContent = paused ? '▶' : '⏸';
+  var t = TRACKS.filter(function (x) { return x.slug === curSlug; })[0];
+  document.getElementById('nowPlaying').innerHTML = t
+    ? '<b>' + t.id + ' ' + t.name + '</b> · ' + (paused ? '已暂停' : '正在展卷…')
+    : '未在播放 —— 从上面挑一首开始展卷吧';
+}
+
+document.getElementById('list').addEventListener('click', function (ev) {
+  var act = ev.target.getAttribute && ev.target.getAttribute('data-act');
+  var row = ev.target.closest ? ev.target.closest('.track') : null;
+  if (!row) return;
+  playTrack(row.dataset.slug, act === 'seam');
+});
+document.getElementById('loopChk').addEventListener('change', function () {
+  player.loop = this.checked;
+});
+document.getElementById('vol').addEventListener('input', function () {
+  player.volume = this.value / 100;
+});
+player.volume = 0.72;
+document.getElementById('bigPlay').addEventListener('click', function () {
+  if (!curSlug) { playTrack(TRACKS[0].slug); return; }
+  if (player.paused) player.play(); else player.pause();
+});
+player.addEventListener('play', function () { syncUI(false); });
+player.addEventListener('pause', function () { syncUI(true); });
+player.addEventListener('ended', function () { syncUI(true); });
+syncUI(true);
+</script>
+</body>
+</html>
